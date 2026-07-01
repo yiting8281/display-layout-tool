@@ -4,18 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>展場陳列與價格排版示意工具</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Interact.js for Drag and Resize -->
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
-    <!-- html2canvas for Exporting -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #f3f4f6;
         }
-        /* Custom drag & resize handle styles */
         .card-element {
             touch-action: none;
             user-select: none;
@@ -26,7 +22,6 @@
             outline: 2px solid #2563eb;
             box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
         }
-        /* Grid background for canvas */
         .canvas-bg {
             background-size: 20px 20px;
             background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px),
@@ -36,7 +31,6 @@
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <!-- Top Navbar -->
     <header class="bg-slate-800 text-white px-6 py-3 flex justify-between items-center shadow-md shrink-0">
         <div class="flex items-center space-x-3">
             <span class="text-xl font-bold tracking-wider">展場陳列與價格排版示意工具</span>
@@ -47,583 +41,56 @@
         </button>
     </header>
 
-    <!-- Main Workspace -->
     <div class="flex flex-1 overflow-hidden">
         
-        <!-- LEFT PANEL: Canvas & Card Templates -->
         <aside class="w-80 bg-white border-r border-gray-200 p-4 flex flex-col space-y-6 overflow-y-auto shrink-0">
-            
-            <!-- Section 1: Canvas Size Configuration -->
             <div>
-                <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wider mb-3 pb-1 border-b border-gray-100 flex items-center">
+                <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wider mb-3 pb-1 border-b border-gray-100">
                     🖼️ 1. 畫布尺寸（外框）
                 </h3>
-                
-                <!-- Preset Dropdown -->
                 <div class="mb-3">
                     <label class="block text-xs text-gray-500 font-medium mb-1">選擇常用尺寸</label>
-                    <select id="select-canvas-preset" class="w-full bg-gray-50 border border-gray-300 text-gray-700 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="select-canvas-preset" class="w-full bg-gray-50 border border-gray-300 text-gray-700 rounded-md p-2 text-sm focus:outline-none">
                         <option value="90x30">櫃位後鐵網 A (90 x 30 cm)</option>
                         <option value="120x60">大型陳列架 B (120 x 60 cm)</option>
                         <option value="60x40">中型展示櫃 C (60 x 40 cm)</option>
                         <option value="100x100">正方形展板 D (100 x 100 cm)</option>
                     </select>
                 </div>
-
-                <!-- Custom Size Input -->
                 <div class="grid grid-cols-2 gap-2 mb-3">
                     <div>
                         <label class="block text-xs text-gray-500 font-medium mb-1">寬度 (cm)</label>
-                        <input type="number" id="input-canvas-w" value="90" min="10" max="500" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
+                        <input type="number" id="input-canvas-w" value="90" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 text-sm text-center">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-500 font-medium mb-1">高度 (cm)</label>
-                        <input type="number" id="input-canvas-h" value="30" min="10" max="500" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
+                        <input type="number" id="input-canvas-h" value="30" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 text-sm text-center">
                     </div>
                 </div>
-
                 <div class="mb-3">
                     <label class="block text-xs text-gray-500 font-medium mb-1">自訂尺寸名稱</label>
-                    <input type="text" id="input-canvas-name" value="自訂展示區域" placeholder="例如：中島櫃A側" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="input-canvas-name" value="櫃台後鐵網A" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 text-sm">
                 </div>
-
-                <button id="btn-save-canvas-preset" class="w-full bg-slate-600 hover:bg-slate-700 text-white text-xs py-2 rounded font-medium transition cursor-pointer mb-2">
+                <button id="btn-save-canvas-preset" class="w-full bg-slate-600 hover:bg-slate-700 text-white text-xs py-2 rounded font-medium transition cursor-pointer">
                     📌 儲存此尺寸至常用列表
                 </button>
             </div>
 
-            <!-- Section 2: Card Quick Add Templates -->
             <div>
                 <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wider mb-3 pb-1 border-b border-gray-100">
                     🏷️ 2. 新增卡牌（商品字卡）
                 </h3>
-                
-                <p class="text-xs text-gray-400 mb-3">點擊下方按鈕，在畫布中生成指定尺寸與版型的商品字卡：</p>
-                
                 <div class="space-y-2">
                     <button class="btn-add-card w-full text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 p-2.5 rounded-lg text-xs font-medium transition flex justify-between items-center cursor-pointer" 
-                            data-w="15" data-h="20" data-title="Race Belt 號碼帶" data-promo="420" data-orig="500" data-note="標準大尺寸">
+                            data-w="15" data-h="20" data-title="Race Belt 號碼帶" data-promo="420" data-orig="500" data-note="展場價">
                         <div>
                             <span class="font-bold block">📄 號碼帶卡牌 (大)</span>
                             <span class="text-gray-500 font-normal">預設尺寸：15 x 20 cm</span>
                         </div>
                         <span class="bg-blue-200 px-1.5 py-0.5 rounded text-[10px]">新增</span>
                     </button>
-                    
                     <button class="btn-add-card w-full text-left bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 p-2.5 rounded-lg text-xs font-medium transition flex justify-between items-center cursor-pointer" 
-                            data-w="12" data-h="12" data-title="手腕帶 / 頭帶" data-promo="280" data-orig="350" data-note="正方形中尺寸">
+                            data-w="12" data-h="12" data-title="UNIQ 手腕帶" data-promo="380" data-orig="450" data-note="展場價">
                         <div>
                             <span class="font-bold block">⏹️ 手腕/頭帶卡牌 (中)</span>
-                            <span class="text-gray-500 font-normal">預設尺寸：12 x 12 cm</span>
-                        </div>
-                        <span class="bg-amber-200 px-1.5 py-0.5 rounded text-[10px]">新增</span>
-                    </button>
-
-                    <button class="btn-add-card w-full text-left bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 p-2.5 rounded-lg text-xs font-medium transition flex justify-between items-center cursor-pointer" 
-                            data-w="20" data-h="10" data-title="壓縮小腿套 系列" data-promo="980" data-orig="1200" data-note="橫式寬尺寸">
-                        <div>
-                            <span class="font-bold block">➖ 寬型商品卡牌 (橫)</span>
-                            <span class="text-gray-500 font-normal">預設尺寸：20 x 10 cm</span>
-                        </div>
-                        <span class="bg-purple-200 px-1.5 py-0.5 rounded text-[10px]">新增</span>
-                    </button>
-                </div>
-
-                <!-- Custom Card Preset Adder -->
-                <div class="mt-4 pt-4 border-t border-dashed border-gray-200">
-                    <label class="block text-xs font-bold text-gray-600 mb-2">➕ 自訂卡牌尺寸模板</label>
-                    <div class="grid grid-cols-2 gap-2 mb-2">
-                        <input type="number" id="custom-card-w" placeholder="寬 cm" class="w-full bg-gray-50 border border-gray-300 rounded p-1 text-xs text-center">
-                        <input type="number" id="custom-card-h" placeholder="高 cm" class="w-full bg-gray-50 border border-gray-300 rounded p-1 text-xs text-center">
-                    </div>
-                    <input type="text" id="custom-card-title" placeholder="商品預設名稱" class="w-full bg-gray-50 border border-gray-300 rounded p-1 text-xs mb-2">
-                    <button id="btn-add-custom-card" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 rounded font-medium transition cursor-pointer">
-                        生成並放入畫布
-                    </button>
-                </div>
-            </div>
-        </aside>
-
-        <!-- CENTER PANEL: Interactive Live Canvas -->
-        <main class="flex-1 bg-gray-100 p-8 flex justify-center items-center overflow-auto canvas-bg">
-            <!-- Container to enforce layout scale and title for export -->
-            <div id="export-container" class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 flex flex-col space-y-4">
-                
-                <!-- Dynamic Header Label -->
-                <div class="border-b-2 border-gray-800 pb-2 flex justify-between items-end">
-                    <div>
-                        <h2 id="canvas-display-name" class="text-lg font-bold text-gray-800">櫃台後鐵網 A</h2>
-                        <p class="text-xs text-gray-500">比例尺提示：10 像素(px) = 1 公分(cm)</p>
-                    </div>
-                    <div class="text-right">
-                        <span id="canvas-display-size" class="text-sm font-mono font-bold bg-slate-100 text-slate-700 px-2 py-1 rounded">90 x 30 cm</span>
-                    </div>
-                </div>
-
-                <!-- The Actual Work Canvas Area (The Green Grid Border) -->
-                <div id="work-canvas" class="relative border-4 border-emerald-500 bg-emerald-50/20 shadow-inner overflow-hidden transition-all duration-200" style="width: 900px; height: 300px;">
-                    <!-- Draggable Cards will be injected here via JavaScript -->
-                </div>
-                
-                <div class="text-[11px] text-gray-400 italic text-center">
-                    💡 提示：卡牌可在綠框內任意拖曳擺放，點擊卡牌可進行右側詳細欄位修改，或拉動右下角縮放。
-                </div>
-            </div>
-        </main>
-
-        <!-- RIGHT PANEL: Properties Inspector & Layer Controller -->
-        <aside class="w-80 bg-white border-l border-gray-200 p-4 flex flex-col space-y-6 overflow-y-auto shrink-0">
-            <div>
-                <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wider mb-4 pb-1 border-b border-gray-100">
-                    ⚙️ 3. 卡牌屬性編輯
-                </h3>
-
-                <!-- Placeholder state when no card is selected -->
-                <div id="property-placeholder" class="text-center py-12 text-gray-400 text-sm">
-                    <p class="mb-2">📭 尚未選擇卡牌</p>
-                    <p class="text-xs text-gray-300">請在中央畫布上點擊任何一張卡牌以開始編輯內容與精準尺寸</p>
-                </div>
-
-                <!-- Actual Form Fields (hidden by default) -->
-                <form id="property-form" class="space-y-4 hidden" onsubmit="event.preventDefault();">
-                    <input type="hidden" id="edit-card-id">
-                    
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 mb-1">商品名稱</label>
-                        <input type="text" id="edit-title" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">展場優惠價</label>
-                            <div class="relative">
-                                <span class="absolute left-2.5 top-2 text-gray-400 text-xs">$</span>
-                                <input type="text" id="edit-promo" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 pl-6 text-sm font-bold text-red-600 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">原價</label>
-                            <div class="relative">
-                                <span class="absolute left-2.5 top-2 text-gray-400 text-xs">$</span>
-                                <input type="text" id="edit-orig" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 pl-6 text-sm text-gray-500 line-through focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                        <div>
-                            <label class="block text-[11px] font-medium text-slate-500 mb-1">精準寬度 (cm)</label>
-                            <input type="number" id="edit-w" class="w-full bg-white border border-gray-300 rounded p-1 text-xs text-center font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-medium text-slate-500 mb-1">精準高度 (cm)</label>
-                            <input type="number" id="edit-h" class="w-full bg-white border border-gray-300 rounded p-1 text-xs text-center font-mono">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 mb-1">備註/規格說明</label>
-                        <input type="text" id="edit-note" placeholder="例如：極光黑 / 限量款" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                    </div>
-
-                    <div class="pt-4 border-t border-gray-100 flex space-x-2">
-                        <button id="btn-delete-card" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs py-2 rounded-lg font-medium transition cursor-pointer text-center">
-                            🗑️ 刪除卡牌
-                        </button>
-                        <button id="btn-duplicate-card" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 text-xs py-2 rounded-lg font-medium transition cursor-pointer text-center">
-                            📋 複製此卡
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </aside>
-
-    </div>
-
-    <!-- JavaScript Logic -->
-    <script>
-        // Global State
-        let cards = [];
-        let selectedCardId = null;
-        let cardCounter = 0;
-        const SCALE = 10; // 1cm = 10px
-
-        // Custom canvas presets stored in localStorage
-        let customPresets = JSON.parse(localStorage.getItem('custom_canvas_presets')) || [];
-
-        // DOM elements
-        const workCanvas = document.getElementById('work-canvas');
-        const inputCanvasW = document.getElementById('input-canvas-w');
-        const inputCanvasH = document.getElementById('input-canvas-h');
-        const inputCanvasName = document.getElementById('input-canvas-name');
-        const selectCanvasPreset = document.getElementById('select-canvas-preset');
-        const canvasDisplayName = document.getElementById('canvas-display-name');
-        const canvasDisplaySize = document.getElementById('canvas-display-size');
-        const propertyPlaceholder = document.getElementById('property-placeholder');
-        const propertyForm = document.getElementById('property-form');
-
-        // Initial Layout setup
-        function init() {
-            loadPresetsToDropdown();
-            updateCanvasSize();
-            setupEventListeners();
-            setupInteractJS();
-        }
-
-        // Dropdown dynamic builder
-        function loadPresetsToDropdown() {
-            // Keep system default options, clear previous custom ones
-            selectCanvasPreset.innerHTML = `
-                <option value="90x30">櫃位後鐵網 A (90 x 30 cm)</option>
-                <option value="120x60">大型陳列架 B (120 x 60 cm)</option>
-                <option value="60x40">中型展示櫃 C (60 x 40 cm)</option>
-                <option value="100x100">正方形展板 D (100 x 100 cm)</option>
-            `;
-            customPresets.forEach(preset => {
-                const opt = document.createElement('option');
-                opt.value = `${preset.w}x${preset.h}`;
-                opt.textContent = `${preset.name} (${preset.w} x ${preset.h} cm)`;
-                opt.dataset.isCustom = "true";
-                selectCanvasPreset.appendChild(opt);
-            });
-        }
-
-        // Sync inputs and canvas box
-        function updateCanvasSize() {
-            const w = parseInt(inputCanvasW.value) || 90;
-            const h = parseInt(inputCanvasH.value) || 30;
-            const name = inputCanvasName.value || "未命名陳列區";
-
-            // Resize DOM node
-            workCanvas.style.width = `${w * SCALE}px`;
-            workCanvas.style.height = `${h * SCALE}px`;
-
-            // Update visible descriptions
-            canvasDisplayName.textContent = name;
-            canvasDisplaySize.textContent = `${w} x ${h} cm`;
-        }
-
-        function setupEventListeners() {
-            // Canvas width/height change directly
-            inputCanvasW.addEventListener('input', updateCanvasSize);
-            inputCanvasH.addEventListener('input', updateCanvasSize);
-            inputCanvasName.addEventListener('input', updateCanvasSize);
-
-            // Change preset dropdown
-            selectCanvasPreset.addEventListener('change', (e) => {
-                const val = e.target.value;
-                if (!val) return;
-                const [w, h] = val.split('x');
-                inputCanvasW.value = w;
-                inputCanvasH.value = h;
-                
-                // Set name from selected option text (strip out size details)
-                const selectedText = e.target.options[e.target.selectedIndex].text;
-                inputCanvasName.value = selectedText.split(' (')[0];
-                updateCanvasSize();
-            });
-
-            // Save custom preset
-            document.getElementById('btn-save-canvas-preset').addEventListener('click', () => {
-                const w = parseInt(inputCanvasW.value);
-                const h = parseInt(inputCanvasH.value);
-                const name = inputCanvasName.value.trim();
-
-                if(!name) { alert("請輸入尺寸名稱"); return; }
-                
-                customPresets.push({ name, w, h });
-                localStorage.setItem('custom_canvas_presets', JSON.stringify(customPresets));
-                loadPresetsToDropdown();
-                selectCanvasPreset.value = `${w}x${h}`;
-                alert(`已成功儲存常用尺寸：「${name}」`);
-            });
-
-            // Fast add preset cards
-            document.querySelectorAll('.btn-add-card').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    addCard({
-                        w: parseInt(btn.dataset.w),
-                        h: parseInt(btn.dataset.h),
-                        title: btn.dataset.title,
-                        promo: btn.dataset.promo,
-                        orig: btn.dataset.orig,
-                        note: btn.dataset.note
-                    });
-                });
-            });
-
-            // Custom card dimension adder
-            document.getElementById('btn-add-custom-card').addEventListener('click', () => {
-                const w = parseInt(document.getElementById('custom-card-w').value) || 10;
-                const h = parseInt(document.getElementById('custom-card-h').value) || 10;
-                const title = document.getElementById('custom-card-title').value.trim() || "自訂商品卡";
-                addCard({ w, h, title, promo: "0", orig: "0", note: "" });
-            });
-
-            // Handle Inspector Input updates
-            document.getElementById('edit-title').addEventListener('input', syncFormToCard);
-            document.getElementById('edit-promo').addEventListener('input', syncFormToCard);
-            document.getElementById('edit-orig').addEventListener('input', syncFormToCard);
-            document.getElementById('edit-note').addEventListener('input', syncFormToCard);
-            document.getElementById('edit-w').addEventListener('input', syncFormToCardDimensions);
-            document.getElementById('edit-h').addEventListener('input', syncFormToCardDimensions);
-
-            // Delete Card
-            document.getElementById('btn-delete-card').addEventListener('click', () => {
-                if (!selectedCardId) return;
-                const el = document.getElementById(selectedCardId);
-                if (el) el.remove();
-                cards = cards.filter(c => c.id !== selectedCardId);
-                deselectAll();
-            });
-
-            // Duplicate Card
-            document.getElementById('btn-duplicate-card').addEventListener('click', () => {
-                if (!selectedCardId) return;
-                const current = cards.find(c => c.id === selectedCardId);
-                if (!current) return;
-                addCard({
-                    w: current.w,
-                    h: current.h,
-                    title: current.title + " (複製)",
-                    promo: current.promo,
-                    orig: current.orig,
-                    note: current.note,
-                    x: current.x + 20,
-                    y: current.y + 20
-                });
-            });
-
-            // Export to PNG Image via html2canvas
-            document.getElementById('btn-export').addEventListener('click', () => {
-                deselectAll(); // Clean select outline before snapshot
-                const target = document.getElementById('export-container');
-                
-                // Use a slight timeout to ensure render frame updates
-                setTimeout(() => {
-                    html2canvas(target, {
-                        scale: 2, // Double quality for design layout readability
-                        useCORS: true,
-                        backgroundColor: '#ffffff'
-                    }).then(canvas => {
-                        const link = document.createElement('a');
-                        const name = inputCanvasName.value || '陳列示意圖';
-                        link.download = `${name}_排版示意圖.png`;
-                        link.href = canvas.toDataURL('image/png');
-                        link.click();
-                    });
-                }, 100);
-            });
-
-            // Clicking outside layout elements clears selection
-            workCanvas.addEventListener('click', (e) => {
-                if (e.target === workCanvas) {
-                    deselectAll();
-                }
-            });
-        }
-
-        // Add Card Component Instance
-        function addCard(data) {
-            cardCounter++;
-            const id = `card-${cardCounter}`;
-            
-            const cardObj = {
-                id: id,
-                w: data.w,
-                h: data.h,
-                title: data.title,
-                promo: data.promo,
-                orig: data.orig,
-                note: data.note,
-                x: data.x !== undefined ? data.x : 10,
-                y: data.y !== undefined ? data.y : 10
-            };
-            
-            cards.push(cardObj);
-
-            // Render Card Node Element
-            const div = document.createElement('div');
-            div.id = id;
-            div.className = "card-element bg-sky-50 border-2 border-sky-400 text-sky-950 p-2 rounded-md flex flex-col justify-between overflow-hidden cursor-move shadow-sm";
-            div.style.width = `${cardObj.w * SCALE}px`;
-            div.style.height = `${cardObj.h * SCALE}px`;
-            div.style.transform = `translate(${cardObj.x}px, ${cardObj.y}px)`;
-            div.setAttribute('data-x', cardObj.x);
-            div.setAttribute('data-y', cardObj.y);
-
-            // Inner Template structure mapping visually to traditional POP cards
-            div.innerHTML = `
-                <div class="w-full flex flex-col h-full pointer-events-none">
-                    <div class="font-bold border-b border-sky-300 pb-0.5 text-center text-xs tracking-tight truncate card-ui-title underline decoration-sky-400 decoration-1">
-                        ${cardObj.title}
-                    </div>
-                    <div class="flex-1 flex flex-col justify-center items-center py-1">
-                        <div class="text-[10px] text-gray-500 scale-90 line-through card-ui-orig">$${cardObj.orig}</div>
-                        <div class="text-sm font-extrabold text-red-600 leading-none card-ui-promo">$${cardObj.promo}</div>
-                    </div>
-                    <div class="text-[9px] text-sky-700 text-center truncate card-ui-note">
-                        ${cardObj.note || '&nbsp;'}
-                    </div>
-                    <div class="absolute bottom-1 right-1 text-[9px] text-gray-400 font-mono scale-75 select-none card-ui-dim">
-                        ${cardObj.w}x${cardObj.h}
-                    </div>
-                </div>
-            `;
-
-            // Click node to open Inspector Panel
-            div.addEventListener('click', (e) => {
-                e.stopPropagation();
-                selectCard(id);
-            });
-
-            workCanvas.appendChild(div);
-            selectCard(id);
-        }
-
-        // Selection Controller
-        function selectCard(id) {
-            deselectAll();
-            selectedCardId = id;
-            const el = document.getElementById(id);
-            if (el) el.classList.add('selected');
-
-            const cardObj = cards.find(c => c.id === id);
-            if (cardObj) {
-                propertyPlaceholder.classList.add('hidden');
-                propertyForm.classList.remove('hidden');
-
-                document.getElementById('edit-card-id').value = id;
-                document.getElementById('edit-title').value = cardObj.title;
-                document.getElementById('edit-promo').value = cardObj.promo;
-                document.getElementById('edit-orig').value = cardObj.orig;
-                document.getElementById('edit-note').value = cardObj.note;
-                document.getElementById('edit-w').value = cardObj.w;
-                document.getElementById('edit-h').value = cardObj.h;
-            }
-        }
-
-        function deselectAll() {
-            selectedCardId = null;
-            document.querySelectorAll('.card-element').forEach(el => el.classList.remove('selected'));
-            propertyPlaceholder.classList.remove('hidden');
-            propertyForm.classList.add('hidden');
-        }
-
-        // Sync Text Inputs live to selected item on canvas
-        function syncFormToCard() {
-            if (!selectedCardId) return;
-            const cardObj = cards.find(c => c.id === selectedCardId);
-            const el = document.getElementById(selectedCardId);
-            if (!cardObj || !el) return;
-
-            cardObj.title = document.getElementById('edit-title').value;
-            cardObj.promo = document.getElementById('edit-promo').value;
-            cardObj.orig = document.getElementById('edit-orig').value;
-            cardObj.note = document.getElementById('edit-note').value;
-
-            // Live change text
-            el.querySelector('.card-ui-title').textContent = cardObj.title;
-            el.querySelector('.card-ui-orig').textContent = `$${cardObj.orig}`;
-            el.querySelector('.card-ui-promo').textContent = `$${cardObj.promo}`;
-            el.querySelector('.card-ui-note').innerHTML = cardObj.note || '&nbsp;';
-        }
-
-        // Sync Dimension Inputs live to card size
-        function syncFormToCardDimensions() {
-            if (!selectedCardId) return;
-            const cardObj = cards.find(c => c.id === selectedCardId);
-            const el = document.getElementById(selectedCardId);
-            if (!cardObj || !el) return;
-
-            const nw = parseInt(document.getElementById('edit-w').value) || 5;
-            const nh = parseInt(document.getElementById('edit-h').value) || 5;
-
-            cardObj.w = nw;
-            cardObj.h = nh;
-
-            el.style.width = `${nw * SCALE}px`;
-            el.style.height = `${nh * SCALE}px`;
-            el.querySelector('.card-ui-dim').textContent = `${nw}x${nh}`;
-        }
-
-        // Drag & Resize engine orchestration via interact.js
-        function setupInteractJS() {
-            interact('.card-element')
-                .draggable({
-                    listeners: {
-                        move(event) {
-                            const target = event.target;
-                            // Keep tracks of positions via data attributes
-                            const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-                            const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-
-                            target.style.transform = `translate(${x}px, ${y}px)`;
-                            target.setAttribute('data-x', x);
-                            target.setAttribute('data-y', y);
-
-                            // Sync back to internal data state
-                            const cObj = cards.find(c => c.id === target.id);
-                            if (cObj) {
-                                cObj.x = x;
-                                cObj.y = y;
-                            }
-                        }
-                    },
-                    modifiers: [
-                        // Keep within green parent container bounds
-                        interact.modifiers.restrictRect({
-                            restriction: 'parent',
-                            endOnly: false
-                        })
-                    ]
-                })
-                .resizable({
-                    edges: { right: true, bottom: true },
-                    listeners: {
-                        move(event) {
-                            const target = event.target;
-                            let x = (parseFloat(target.getAttribute('data-x')) || 0);
-                            let y = (parseFloat(target.getAttribute('data-y')) || 0);
-
-                            // Resize logic
-                            target.style.width = `${event.rect.width}px`;
-                            target.style.height = `${event.rect.height}px`;
-
-                            // Calculate back to cm measurements
-                            const cmW = Math.round(event.rect.width / SCALE);
-                            const cmH = Math.round(event.rect.height / SCALE);
-
-                            // Sync state
-                            const cObj = cards.find(c => c.id === target.id);
-                            if (cObj) {
-                                cObj.w = cmW;
-                                cObj.h = cmH;
-                                
-                                // Live update display text
-                                target.querySelector('.card-ui-dim').textContent = `${cmW}x${cmH}`;
-                                
-                                // If currently inspected, sync the right property sidebar numbers
-                                if (selectedCardId === target.id) {
-                                    document.getElementById('edit-w').value = cmW;
-                                    document.getElementById('edit-h').value = cmH;
-                                }
-                            }
-                        }
-                    },
-                    modifiers: [
-                        interact.modifiers.restrictSize({
-                            min: { width: 40, height: 40 }
-                        }),
-                        interact.modifiers.restrictRect({
-                            restriction: 'parent'
-                        })
-                    ]
-                });
-        }
-
-        // Fire everything up on load
-        window.addEventListener('DOMContentLoaded', init);
-    </script>
-</body>
-</html>
+                            <span class="text-gray-50
