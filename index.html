@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - 終極保證版</title>
+    <title>展場陳列與價格排版示意工具 - PPTX最終版</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
     <style>
@@ -268,7 +268,6 @@
                 alert(`已儲存常用尺寸：「${name}」`);
             });
 
-            // 點擊事件完全正常，直接觸發添加
             document.getElementById('btn-add-large').addEventListener('click', () => {
                 addCard({ w: 15, h: 20, title: "Race Belt 號碼帶", promo: "420", orig: "500", note: "展場價", url: "https://www.compressport.com" });
             });
@@ -349,7 +348,6 @@
                 <div class="resize-handle"></div>
             `;
 
-            // 純原生滑鼠事件控制：拖曳與縮放
             let isDragging = false;
             let isResizing = false;
             let startX, startY, startLeft, startTop, startWidth, startHeight;
@@ -370,7 +368,6 @@
                     startY = e.clientY;
                     startLeft = div.offsetLeft;
                     startTop = div.offsetTop;
-                    // 提升目前拖曳圖層
                     document.querySelectorAll('.card-element').forEach(c => c.style.zIndex = 10);
                     div.style.zIndex = 50;
                 }
@@ -380,7 +377,6 @@
                         let newLeft = startLeft + (moveEvent.clientX - startX);
                         let newTop = startTop + (moveEvent.clientY - startY);
                         
-                        // 限制在綠框內
                         newLeft = Math.max(0, Math.min(newLeft, workCanvas.clientWidth - div.offsetWidth));
                         newTop = Math.max(0, Math.min(newTop, workCanvas.clientHeight - div.offsetHeight));
 
@@ -451,127 +447,4 @@
             selectedCardId = null;
             document.querySelectorAll('.card-element').forEach(el => el.classList.remove('selected'));
             propertyPlaceholder.classList.remove('hidden');
-            propertyForm.classList.add('hidden');
-        }
-
-        function syncFormToCard() {
-            if (!selectedCardId) return;
-            const cardObj = cards.find(c => c.id === selectedCardId);
-            const el = document.getElementById(selectedCardId);
-            if (!cardObj || !el) return;
-
-            cardObj.title = document.getElementById('edit-title').value;
-            cardObj.promo = document.getElementById('edit-promo').value;
-            cardObj.orig = document.getElementById('edit-orig').value;
-            cardObj.note = document.getElementById('edit-note').value;
-            cardObj.url = document.getElementById('edit-url').value;
-
-            el.querySelector('.card-ui-title').textContent = cardObj.title;
-            el.querySelector('.card-ui-orig').textContent = `$${cardObj.orig}`;
-            el.querySelector('.card-ui-promo').textContent = `$${cardObj.promo}`;
-            el.querySelector('.card-ui-note').innerHTML = cardObj.note || '&nbsp;';
-        }
-
-        function syncFormToCardDimensions() {
-            if (!selectedCardId) return;
-            const cardObj = cards.find(c => c.id === selectedCardId);
-            const el = document.getElementById(selectedCardId);
-            if (!cardObj || !el) return;
-
-            const nw = parseInt(document.getElementById('edit-w').value) || 5;
-            const nh = parseInt(document.getElementById('edit-h').value) || 5;
-            
-            const maxW = Math.round(workCanvas.clientWidth / SCALE) - Math.round(el.offsetLeft / SCALE);
-            const maxH = Math.round(workCanvas.clientHeight / SCALE) - Math.round(el.offsetTop / SCALE);
-            
-            cardObj.w = Math.min(nw, maxW);
-            cardObj.h = Math.min(nh, maxH);
-
-            el.style.width = `${cardObj.w * SCALE}px`;
-            el.style.height = `${cardObj.h * SCALE}px`;
-            el.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
-        }
-
-        function exportToPPTX() {
-            deselectAll();
-            let pptx = new PptxGenJS();
-            pptx.layout = 'LAYOUT_169';
-            let slide = pptx.addSlide();
-
-            const canvasW = parseInt(inputCanvasW.value) || 90;
-            const canvasH = parseInt(inputCanvasH.value) || 30;
-            const canvasName = inputCanvasName.value || "陳列示意圖";
-
-            slide.addText(`${canvasName} (${canvasW} x ${canvasH} cm)`, {
-                x: 0.5, y: 0.4, w: 12, h: 0.5, fontSize: 20, bold: true, color: '1E293B', fontFace: 'Arial'
-            });
-            slide.addText("💡 提示：投影片放映模式下，點擊卡牌即可直接開啟指定商品網頁", {
-                x: 0.5, y: 0.9, w: 12, h: 0.3, fontSize: 10, italic: true, color: '64748B', fontFace: 'Arial'
-            });
-
-            let scaleFactor = Math.min(12.0 / canvasW, 4.5 / canvasH);
-            let pCanvasW = canvasW * scaleFactor;
-            let pCanvasH = canvasH * scaleFactor;
-            let pCanvasX = 0.5 + (12.0 - pCanvasW) / 2;
-            let pCanvasY = 1.5 + (4.5 - pCanvasH) / 2;
-
-            slide.addShape(pptx.ShapeType.rectangle, {
-                x: pCanvasX, y: pCanvasY, w: pCanvasW, h: pCanvasH,
-                fill: { color: 'F0FDF4' }, line: { color: '10B981', width: 3 }
-            });
-
-            cards.forEach(card => {
-                let relativeX = card.x / SCALE;
-                let relativeY = card.y / SCALE;
-                let itemX = pCanvasX + (relativeX * scaleFactor);
-                let itemY = pCanvasY + (relativeY * scaleFactor);
-                let itemW = card.w * scaleFactor;
-                let itemH = card.h * scaleFactor;
-
-                let linkConfig = null;
-                if (card.url && card.url.trim().startsWith('http')) {
-                    linkConfig = { url: card.url.trim() };
-                }
-
-                slide.addShape(pptx.ShapeType.roundRect, {
-                    x: itemX, y: itemY, w: itemW, h: itemH,
-                    fill: { color: 'F0F9FF' }, line: { color: '38BDF8', width: 1.5 },
-                    hyperlink: linkConfig
-                });
-
-                slide.addText(card.title, {
-                    x: itemX, y: itemY + (itemH * 0.05), w: itemW, h: itemH * 0.25,
-                    fontSize: Math.max(10, Math.min(14, Math.round(itemH * 2.5))),
-                    bold: true, align: 'center', color: '0369A1', underline: true, fontFace: 'Arial',
-                    hyperlink: linkConfig
-                });
-
-                slide.addText(`$${card.orig}`, {
-                    x: itemX, y: itemY + (itemH * 0.35), w: itemW, h: itemH * 0.15,
-                    fontSize: Math.max(8, Math.min(10, Math.round(itemH * 1.8))),
-                    align: 'center', color: '94A3B8', strike: true, fontFace: 'Arial',
-                    hyperlink: linkConfig
-                });
-
-                slide.addText(`$${card.promo}`, {
-                    x: itemX, y: itemY + (itemH * 0.50), w: itemW, h: itemH * 0.25,
-                    fontSize: Math.max(12, Math.min(18, Math.round(itemH * 3.2))),
-                    bold: true, align: 'center', color: 'DC2626', fontFace: 'Arial',
-                    hyperlink: linkConfig
-                });
-
-                if(card.note) {
-                    slide.addText(card.note, {
-                        x: itemX, y: itemY + (itemH * 0.78), w: itemW, h: itemH * 0.18,
-                        fontSize: Math.max(7, Math.min(9, Math.round(itemH * 1.5))),
-                        align: 'center', color: '0369A1', fontFace: 'Arial',
-                        hyperlink: linkConfig
-                    });
-                }
-            });
-
-            pptx.writeFile({ fileName: `${canvasName}_陳列超連結簡報` });
-        }
-    </script>
-</body>
-</html>
+            propertyForm.classList.add('hidden
