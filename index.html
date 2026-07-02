@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - 終極 PDF 修正版</title>
-    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <title>展場陳列與價格排版示意工具 - 終極 PDF 完工版</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -152,14 +151,14 @@
         }
         .tab-close:hover { color: #ef4444; }
 
-        /* PDF 列印媒體樣式 */
+        /* 💡 終極防護：當瀏覽器呼叫列印時，只留下畫布區，其餘面板全部在列印中隱藏 */
         @media print {
             body { background-color: white !important; height: auto !important; overflow: visible !important; }
             .left-panel, .right-panel, .tab-bar, #top-navbar, .resize-handle, #zoom-controls { display: none !important; }
             .app-container { height: auto !important; width: 100% !important; overflow: visible !important; display: block !important; }
             .center-panel { background-image: none !important; background-color: white !important; padding: 0 !important; overflow: visible !important; display: block !important; }
             .canvas-container-wrapper { 
-                transform: scale(1) !important;
+                transform: scale(1) !important; /* 確保列印維持 100% 精準尺寸 */
                 border: none !important; 
                 box-shadow: none !important; 
                 padding: 0 !important; 
@@ -229,7 +228,7 @@
                         <input type="number" id="custom-card-h" placeholder="高 cm" class="input-control" style="text-align:center; padding:4px;">
                     </div>
                     <input type="text" id="custom-card-title" placeholder="商品預設名稱" class="input-control" style="margin-bottom:8px; padding:6px;">
-                    <button id="btn-add-custom-card" style="width:100%; background-color: #2563eb; color:white; padding:8px; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight: bold;">生成並放入畫布</button>
+                    <input type="button" id="btn-add-custom-card" value="生成並放入畫布" style="width:100%; background-color: #2563eb; color:white; padding:8px; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight: bold;">
                 </div>
             </div>
         </aside>
@@ -403,7 +402,13 @@
 
         document.getElementById('btn-add-new-page').addEventListener('click', () => {
             const newId = `page-${Date.now()}`;
-            const newPage = { id: newId, name: `新陳列區-${pageData.length + 1}`, w: 90, h: 30, cards: [] };
+            const newPage = {
+                id: newId,
+                name: `新陳列區-${pageData.length + 1}`,
+                w: 90,
+                h: 30,
+                cards: []
+            };
             pageData.push(newPage);
             switchPage(newId);
         });
@@ -412,7 +417,9 @@
             if (pageData.length <= 1) return;
             if (confirm("確定要刪除這張陳列圖頁面嗎？")) {
                 pageData = pageData.filter(p => p.id !== pageId);
-                if (activePageId === pageId) { activePageId = pageData[pageData.length - 1].id; }
+                if (activePageId === pageId) {
+                    activePageId = pageData[pageData.length - 1].id;
+                }
                 switchPage(activePageId);
             }
         }
@@ -427,21 +434,32 @@
             canvasDisplayName.textContent = name;
             canvasDisplaySize.textContent = `${w} x ${h} cm`;
 
-            const activeCard = cards.find(c => c.id === selectedCardId);
-
             const activePage = pageData.find(p => p.id === activePageId);
-            if (activePage) { activePage.name = name; activePage.w = w; activePage.h = h; }
-            const activeTab = pageTabsContainer.querySelector('.tab-button.active span');
+            if (activePage) {
+                activePage.w = w;
+                activePage.h = h;
+                activePage.name = name;
+            }
+            const activeTab = document.querySelector('.tab-button.active span');
             if(activeTab) activeTab.textContent = name;
         }
 
         function setupZoomListeners() {
-            document.getElementById('btn-zoom-in').addEventListener('click', () => { if (currentZoom < 150) { currentZoom += 10; updateZoom(); } });
-            document.getElementById('btn-zoom-out').addEventListener('click', () => { if (currentZoom > 40) { currentZoom -= 10; updateZoom(); } });
-            document.getElementById('btn-zoom-reset').addEventListener('click', () => { currentZoom = 100; updateZoom(); });
+            document.getElementById('btn-zoom-in').addEventListener('click', () => {
+                currentZoom = Math.min(150, currentZoom + 10);
+                applyZoom();
+            });
+            document.getElementById('btn-zoom-out').addEventListener('click', () => {
+                currentZoom = Math.max(30, currentZoom - 10);
+                applyZoom();
+            });
+            document.getElementById('btn-zoom-reset').addEventListener('click', () => {
+                currentZoom = 100;
+                applyZoom();
+            });
         }
 
-        function updateZoom() {
+        function applyZoom() {
             zoomDisplay.textContent = `${currentZoom}%`;
             canvasHolder.style.transform = `scale(${currentZoom / 100})`;
         }
@@ -487,6 +505,7 @@
             document.getElementById('edit-orig').addEventListener('input', syncFormToCard);
             document.getElementById('edit-note').addEventListener('input', syncFormToCard);
             document.getElementById('edit-url').addEventListener('input', syncFormToCard);
+            
             document.getElementById('edit-w').addEventListener('input', syncFormToCardDimensions);
             document.getElementById('edit-h').addEventListener('input', syncFormToCardDimensions);
 
@@ -503,7 +522,7 @@
                 const activePage = pageData.find(p => p.id === activePageId);
                 const current = activePage.cards.find(c => c.id === selectedCardId);
                 if (!current) return;
-                addCard({ w: current.w, h: current.h, title: current.title + " (複製)", promo: current.promo, orig: current.orig, note: current.note, url: current.url, x: current.x + 20, y: current.y + 20 });
+                addCard({ w: current.w, h: current.h, title: current.title + " (複製)", promo: current.promo, orig: current.orig, note: current.note, url: current.url, x: current.x + 25, y: current.y + 25 });
             });
 
             document.getElementById('btn-export-pdf').addEventListener('click', exportAllPagesToPDF);
@@ -600,7 +619,9 @@
         function selectCard(id) {
             document.querySelectorAll('.card-element').forEach(el => el.classList.remove('selected'));
             selectedCardId = id;
-            document.getElementById(id).classList.add('selected');
+            const element = document.getElementById(id);
+            if(element) element.classList.add('selected');
+            
             const activePage = pageData.find(p => p.id === activePageId);
             const cardObj = activePage.cards.find(c => c.id === id);
             if (cardObj) {
@@ -658,10 +679,11 @@
             el.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
         }
 
-        // 💡 修正後的多分頁安全列印邏輯：不使用頁面刷新，改用安全視窗覆蓋
+        // 💡 終極安全：利用 CSS 控制列印隱藏，完全不重整網頁的合併多頁 PDF 導出法
         function exportAllPagesToPDF() {
             deselectAll();
             
+            // 儲存目前編輯中的分頁數值
             const activePage = pageData.find(p => p.id === activePageId);
             if (activePage) {
                 activePage.w = parseInt(inputCanvasW.value) || 90;
@@ -669,21 +691,22 @@
                 activePage.name = inputCanvasName.value || "未命名陳列區";
             }
 
-            // 備份目前的單一畫布 DOM 結構，避免損壞原始操作資料
-            const backupHTML = document.getElementById('canvas-wrapper').innerHTML;
+            // 備份當前的中央操作面板原始 DOM 結構
+            const originalCenterPanelHTML = document.getElementById('canvas-wrapper').innerHTML;
+            const centerPanel = document.getElementById('canvas-wrapper');
 
-            // 在列印畫面上同時生成全部的分頁資料夾
+            // 建立列印專用的大容器
             let printContainer = document.createElement('div');
             printContainer.style.width = "100%";
 
+            // 把所有分頁的資料一次塞進去生成
             pageData.forEach(page => {
                 let wrapper = document.createElement('div');
                 wrapper.className = "canvas-container-wrapper";
-                wrapper.style.display = "block";
-                wrapper.style.marginBottom = "40px";
                 
                 let innerContainer = document.createElement('div');
                 innerContainer.style.display = "inline-block";
+                innerContainer.style.width = "100%";
                 
                 innerContainer.innerHTML = `
                     <div style="border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
@@ -693,17 +716,18 @@
                         </div>
                         <div style="font-family: monospace; font-weight: bold; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #334155;">${page.w} x ${page.h} cm</div>
                     </div>
-                    <div id="print-canvas-${page.id}" style="position: relative; border: 4px solid #10b981; background-color: #ffffff; width: ${page.w * SCALE}px; height: ${page.h * SCALE}px; overflow:hidden;"></div>
+                    <div id="print-canvas-${page.id}" style="position: relative; border: 4px solid #10b981; background-color: #ffffff; width: ${page.w * SCALE}px; height: ${page.h * SCALE}px; overflow: hidden;"></div>
                 `;
                 
                 wrapper.appendChild(innerContainer);
                 printContainer.appendChild(wrapper);
             });
 
-            const centerPanel = document.getElementById('canvas-wrapper');
+            // 暫時用列印容器蓋掉中間畫面
             centerPanel.innerHTML = "";
             centerPanel.appendChild(printContainer);
 
+            // 把卡牌塞到各自對應的列印畫布內
             pageData.forEach(page => {
                 const targetPrintCanvas = document.getElementById(`print-canvas-${page.id}`);
                 page.cards.forEach(card => {
@@ -728,17 +752,15 @@
                 });
             });
 
-            // 喚起列印視窗
+            // 💡 叫出列印視窗，完成後無痕復原畫面
             setTimeout(() => {
                 window.print();
-                
-                // 💡 列印完後立刻「無痕還原」網頁原本的三欄跟分頁狀態，你的資料完全不會遺失！
                 setTimeout(() => {
-                    centerPanel.innerHTML = backupHTML;
-                    // 重新綁定事件
-                    location.reload(); 
-                }, 300);
-            }, 300);
+                    // 完美復原，免重新整理！
+                    centerPanel.innerHTML = originalCenterPanelHTML;
+                    switchPage(activePageId); // 重新載入當前編輯頁
+                }, 200);
+            }, 200);
         }
     </script>
 </body>
