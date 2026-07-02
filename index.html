@@ -133,6 +133,7 @@
             padding: 6px 6px 0 6px;
             border-radius: 8px 8px 0 0;
             box-sizing: border-box;
+            overflow-x: auto;
         }
         .tab-button {
             padding: 8px 16px;
@@ -146,6 +147,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            white-space: nowrap;
         }
         .tab-button.active {
             background-color: white;
@@ -434,23 +436,30 @@
         }
 
         function switchPage(pageId) {
+            // 1. 在切換前，先把舊分頁在輸入框內的最終資訊更新回 pageData
             const activePage = pageData.find(p => p.id === activePageId);
             if (activePage) {
                 activePage.w = parseInt(inputCanvasW.value) || 90;
                 activePage.h = parseInt(inputCanvasH.value) || 30;
                 activePage.name = inputCanvasName.value || "未命名陳列區";
             }
+            
+            // 2. 切換當前活動分頁 ID
             activePageId = pageId;
             const targetPage = pageData.find(p => p.id === pageId);
+            
+            // 3. 將新分頁的資料餵給輸入欄位
             inputCanvasW.value = targetPage.w;
             inputCanvasH.value = targetPage.h;
             inputCanvasName.value = targetPage.name;
+            
+            // 4. 重建畫布 UI
             workCanvas.innerHTML = "";
             deselectAll();
-            updateCanvasSize();
+            updateCanvasSizeUI(); // 僅更新畫面，不在此重複寫入以避免覆蓋
             renderTabs();
             targetPage.cards.forEach(cardData => recreateCardDOM(cardData));
-            saveToLocalStorage(); // 同步當前所在頁面
+            saveToLocalStorage(); // 同步至本地端
         }
 
         document.getElementById('btn-add-new-page').addEventListener('click', () => {
@@ -470,7 +479,34 @@
             }
         }
 
+        // 用來實時同步 input 輸入到陣列並更新介面
         function updateCanvasSize() {
+            const w = parseInt(inputCanvasW.value) || 90;
+            const h = parseInt(inputCanvasH.value) || 30;
+            const name = inputCanvasName.value || "未命名陳列區";
+            
+            workCanvas.style.width = `${w * SCALE}px`;
+            workCanvas.style.height = `${h * SCALE}px`;
+            canvasDisplayName.textContent = name;
+            canvasDisplaySize.textContent = `${w} x ${h} cm`;
+            
+            // 確實同步到目前分頁的陣列資料中
+            const activePage = pageData.find(p => p.id === activePageId);
+            if (activePage) { 
+                activePage.w = w; 
+                activePage.h = h; 
+                activePage.name = name; 
+            }
+            
+            // 即時反應到上方 Tab 名字
+            const activeTab = document.querySelector('.tab-button.active span');
+            if(activeTab) activeTab.textContent = name;
+            
+            saveToLocalStorage();
+        }
+
+        // 僅單純根據目前輸入值更新畫布大小與文字 UI（不寫回陣列）
+        function updateCanvasSizeUI() {
             const w = parseInt(inputCanvasW.value) || 90;
             const h = parseInt(inputCanvasH.value) || 30;
             const name = inputCanvasName.value || "未命名陳列區";
@@ -478,11 +514,6 @@
             workCanvas.style.height = `${h * SCALE}px`;
             canvasDisplayName.textContent = name;
             canvasDisplaySize.textContent = `${w} x ${h} cm`;
-            const activePage = pageData.find(p => p.id === activePageId);
-            if (activePage) { activePage.w = w; activePage.h = h; activePage.name = name; }
-            const activeTab = document.querySelector('.tab-button.active span');
-            if(activeTab) activeTab.textContent = name;
-            saveToLocalStorage();
         }
 
         function setupZoomListeners() {
@@ -561,7 +592,6 @@
                 addCard({ type: current.type, w: current.w, h: current.h, title: current.title + " (複製)", promo: current.promo, orig: current.orig, note: current.note, url: current.url, x: current.x + 25, y: current.y + 25 });
             });
 
-            // ⚠️ 重置清空按鈕事件
             document.getElementById('btn-clear-storage').addEventListener('click', () => {
                 if (confirm("確定要重置並清空所有排版分頁嗎？所有資料都將消失！")) {
                     localStorage.removeItem('exhibition_page_data');
@@ -673,7 +703,7 @@
                     isDragging = false; isResizing = false;
                     document.removeEventListener('mousemove', moveHandler);
                     document.removeEventListener('mouseup', upHandler);
-                    saveToLocalStorage(); // 拖曳放開或縮放放開時自動儲存座標
+                    saveToLocalStorage();
                 };
                 document.addEventListener('mousemove', moveHandler);
                 document.addEventListener('mouseup', upHandler);
@@ -755,7 +785,7 @@
                 if (promoDiv) promoDiv.textContent = `$${cardObj.promo}`;
                 if (noteDiv) noteDiv.innerHTML = cardObj.note || '&nbsp;';
             }
-            saveToLocalStorage(); // 輸入文字時自動即時儲存
+            saveToLocalStorage();
         }
 
         function syncFormToCardDimensions() {
@@ -774,11 +804,12 @@
             el.style.height = `${cardObj.h * SCALE}px`;
             const dimDiv = el.querySelector('.card-ui-dim');
             if (dimDiv) dimDiv.textContent = `${cardObj.w}x${cardObj.h}`;
-            saveToLocalStorage(); // 修改手動尺寸時自動儲存
+            saveToLocalStorage();
         }
 
         function exportAllPagesToPDF() {
             deselectAll();
+            // 導出前做最後防線同步
             const activePage = pageData.find(p => p.id === activePageId);
             if (activePage) {
                 activePage.w = parseInt(inputCanvasW.value) || 90;
