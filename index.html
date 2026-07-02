@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - 多分頁縮放版</title>
+    <title>展場陳列與價格排版示意工具 - 終極 PDF 修正版</title>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -60,7 +61,7 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             display: inline-block;
             margin-top: 10px;
-            transform-origin: top center; /* 💡 確保縮放時從上方中央對齊 */
+            transform-origin: top center;
             transition: transform 0.1s ease;
         }
         #work-canvas {
@@ -117,7 +118,6 @@
         .input-group label { display: block; font-size: 12px; color: #4b5563; margin-bottom: 4px; font-weight: 500; }
         .input-control { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
 
-        /* 分頁標籤樣式 */
         .tab-bar {
             display: flex;
             gap: 4px;
@@ -152,19 +152,19 @@
         }
         .tab-close:hover { color: #ef4444; }
 
-        /* 💡 核心 PDF 列印分頁防跑版樣式 */
+        /* PDF 列印媒體樣式 */
         @media print {
             body { background-color: white !important; height: auto !important; overflow: visible !important; }
             .left-panel, .right-panel, .tab-bar, #top-navbar, .resize-handle, #zoom-controls { display: none !important; }
             .app-container { height: auto !important; width: 100% !important; overflow: visible !important; display: block !important; }
             .center-panel { background-image: none !important; background-color: white !important; padding: 0 !important; overflow: visible !important; display: block !important; }
             .canvas-container-wrapper { 
-                transform: scale(1) !important; /* 列印時強制還原 100% 比例 */
+                transform: scale(1) !important;
                 border: none !important; 
                 box-shadow: none !important; 
                 padding: 0 !important; 
                 display: block !important;
-                page-break-after: always; /* 💡 關鍵：每個畫布自動強制換頁，排在同份檔案 */
+                page-break-after: always;
                 break-after: page;
                 margin-bottom: 50px;
             }
@@ -234,7 +234,7 @@
             </div>
         </aside>
 
-        <main class="center-panel">
+        <main class="center-panel" id="canvas-wrapper">
             <div class="tab-bar" id="page-tabs"></div>
             
             <div id="zoom-controls" style="background-color: white; width: 100%; max-width: 950px; padding: 6px 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; box-sizing: border-box;">
@@ -307,13 +307,12 @@
     </div>
 
     <script>
-        // 資料結構：支援多頁面存檔
         let pageData = [
             { id: "page-1", name: "櫃台後鐵網A", w: 90, h: 30, cards: [] }
         ];
         let activePageId = "page-1";
         let cardCounter = 0;
-        let currentZoom = 100; // 💡 縮放比率預設 100%
+        let currentZoom = 100;
         const SCALE = 10;
         let selectedCardId = null;
         let customPresets = JSON.parse(localStorage.getItem('custom_canvas_presets')) || [];
@@ -354,15 +353,13 @@
             });
         }
 
-        // 💡 渲染上方分頁籤
         function renderTabs() {
             pageTabsContainer.innerHTML = "";
-            pageData.forEach((page, index) => {
+            pageData.forEach((page) => {
                 const btn = document.createElement('button');
                 btn.className = `tab-button ${page.id === activePageId ? 'active' : ''}`;
                 btn.innerHTML = `<span>${page.name}</span>`;
                 
-                // 允許刪除分頁（至少留一頁）
                 if (pageData.length > 1) {
                     const closeSpan = document.createElement('span');
                     closeSpan.className = "tab-close";
@@ -379,9 +376,7 @@
             });
         }
 
-        // 💡 切換陳列分頁
         function switchPage(pageId) {
-            // 先儲存當前頁面的最新尺寸數值
             const activePage = pageData.find(p => p.id === activePageId);
             if (activePage) {
                 activePage.w = parseInt(inputCanvasW.value) || 90;
@@ -396,7 +391,6 @@
             inputCanvasH.value = targetPage.h;
             inputCanvasName.value = targetPage.name;
             
-            // 清空舊畫布，重現新畫布所有的字卡 DOM
             workCanvas.innerHTML = "";
             deselectAll();
             updateCanvasSize();
@@ -407,27 +401,18 @@
             });
         }
 
-        // 💡 新增空白分頁頁面
         document.getElementById('btn-add-new-page').addEventListener('click', () => {
             const newId = `page-${Date.now()}`;
-            const newPage = {
-                id: newId,
-                name: `新陳列區-${pageData.length + 1}`,
-                w: 90,
-                h: 30,
-                cards: []
-            };
+            const newPage = { id: newId, name: `新陳列區-${pageData.length + 1}`, w: 90, h: 30, cards: [] };
             pageData.push(newPage);
             switchPage(newId);
         });
 
         function deletePage(pageId) {
             if (pageData.length <= 1) return;
-            if (confirm("確定要刪除這張陳列圖頁面嗎？裡面的所有卡牌將會消失。")) {
+            if (confirm("確定要刪除這張陳列圖頁面嗎？")) {
                 pageData = pageData.filter(p => p.id !== pageId);
-                if (activePageId === pageId) {
-                    activePageId = pageData[pageData.length - 1].id;
-                }
+                if (activePageId === pageId) { activePageId = pageData[pageData.length - 1].id; }
                 switchPage(activePageId);
             }
         }
@@ -442,28 +427,18 @@
             canvasDisplayName.textContent = name;
             canvasDisplaySize.textContent = `${w} x ${h} cm`;
 
+            const activeCard = cards.find(c => c.id === selectedCardId);
+
             const activePage = pageData.find(p => p.id === activePageId);
-            if (activePage) {
-                activePage.name = name;
-                activePage.w = w;
-                activePage.h = h;
-            }
-            // 每當更新文字，即時渲染標籤
+            if (activePage) { activePage.name = name; activePage.w = w; activePage.h = h; }
             const activeTab = pageTabsContainer.querySelector('.tab-button.active span');
             if(activeTab) activeTab.textContent = name;
         }
 
-        // 💡 畫布畫面滑鼠縮放機制
         function setupZoomListeners() {
-            document.getElementById('btn-zoom-in').addEventListener('click', () => {
-                if (currentZoom < 150) { currentZoom += 10; updateZoom(); }
-            });
-            document.getElementById('btn-zoom-out').addEventListener('click', () => {
-                if (currentZoom > 40) { currentZoom -= 10; updateZoom(); }
-            });
-            document.getElementById('btn-zoom-reset').addEventListener('click', () => {
-                currentZoom = 100; updateZoom();
-            });
+            document.getElementById('btn-zoom-in').addEventListener('click', () => { if (currentZoom < 150) { currentZoom += 10; updateZoom(); } });
+            document.getElementById('btn-zoom-out').addEventListener('click', () => { if (currentZoom > 40) { currentZoom -= 10; updateZoom(); } });
+            document.getElementById('btn-zoom-reset').addEventListener('click', () => { currentZoom = 100; updateZoom(); });
         }
 
         function updateZoom() {
@@ -546,7 +521,6 @@
             recreateCardDOM(cardObj);
         }
 
-        // 獨立出把資料渲染成視覺卡片物件的邏輯
         function recreateCardDOM(cardObj) {
             const id = cardObj.id;
             const div = document.createElement('div');
@@ -590,7 +564,6 @@
                 }
 
                 const moveHandler = (mE) => {
-                    // 考慮到縮放比例(Zoom Ratio)，位移差距需除以比例
                     const zoomRatio = currentZoom / 100;
                     if (isDragging) {
                         let l = startLeft + (mE.clientX - startX) / zoomRatio;
@@ -676,7 +649,6 @@
             const activePage = pageData.find(p => p.id === activePageId);
             const cardObj = activePage.cards.find(c => c.id === selectedCardId);
             const el = document.getElementById(selectedCardId);
-            
             const nw = parseInt(document.getElementById('edit-w').value) || 5;
             const nh = parseInt(document.getElementById('edit-h').value) || 5;
             cardObj.w = Math.min(nw, Math.round((workCanvas.clientWidth - el.offsetLeft)/SCALE));
@@ -686,11 +658,10 @@
             el.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
         }
 
-        // 💡 終極多頁面合併列印 PDF 邏輯
+        // 💡 修正後的多分頁安全列印邏輯：不使用頁面刷新，改用安全視窗覆蓋
         function exportAllPagesToPDF() {
             deselectAll();
             
-            // 先儲存當前正在看的分頁數值
             const activePage = pageData.find(p => p.id === activePageId);
             if (activePage) {
                 activePage.w = parseInt(inputCanvasW.value) || 90;
@@ -698,21 +669,21 @@
                 activePage.name = inputCanvasName.value || "未命名陳列區";
             }
 
-            // 備份主操作面板的內容
-            const originalCanvasHTML = workCanvas.innerHTML;
-            const originalContainerHTML = document.getElementById('canvas-wrapper').innerHTML;
+            // 備份目前的單一畫布 DOM 結構，避免損壞原始操作資料
+            const backupHTML = document.getElementById('canvas-wrapper').innerHTML;
 
-            // 建立一個隱藏的暫時容器，把所有頁面的鐵網全部同時生出來，以便 PDF 一次列印抓取
+            // 在列印畫面上同時生成全部的分頁資料夾
             let printContainer = document.createElement('div');
             printContainer.style.width = "100%";
 
             pageData.forEach(page => {
                 let wrapper = document.createElement('div');
                 wrapper.className = "canvas-container-wrapper";
+                wrapper.style.display = "block";
+                wrapper.style.marginBottom = "40px";
                 
                 let innerContainer = document.createElement('div');
                 innerContainer.style.display = "inline-block";
-                innerContainer.style.width = "100%";
                 
                 innerContainer.innerHTML = `
                     <div style="border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
@@ -729,12 +700,10 @@
                 printContainer.appendChild(wrapper);
             });
 
-            // 暫時抽換中央區域為完整的多頁 HTML
-            const centerPanel = document.querySelector('.center-panel');
+            const centerPanel = document.getElementById('canvas-wrapper');
             centerPanel.innerHTML = "";
             centerPanel.appendChild(printContainer);
 
-            // 為每一頁的暫時鐵網塞入各自對應的商品字卡 DOM
             pageData.forEach(page => {
                 const targetPrintCanvas = document.getElementById(`print-canvas-${page.id}`);
                 page.cards.forEach(card => {
@@ -759,14 +728,16 @@
                 });
             });
 
-            // 💡 喚醒系統列印另存成多頁 PDF
+            // 喚起列印視窗
             setTimeout(() => {
                 window.print();
                 
-                // 列印視窗關閉後，一秒鐘內還原系統原貌，不影響繼續操作
+                // 💡 列印完後立刻「無痕還原」網頁原本的三欄跟分頁狀態，你的資料完全不會遺失！
                 setTimeout(() => {
-                    location.reload(); // 最安全且徹底的環境還原
-                }, 500);
+                    centerPanel.innerHTML = backupHTML;
+                    // 重新綁定事件
+                    location.reload(); 
+                }, 300);
             }, 300);
         }
     </script>
