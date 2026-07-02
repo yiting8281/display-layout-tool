@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - 徹底修復版</title>
-    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <title>展場陳列與價格排版示意工具 - PDF超連結版</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -13,10 +12,10 @@
             background-color: #f3f4f6;
             height: 100vh;
             display: flex;
-            flex-direction: column; /* 💡 修正錯誤：標準直向佈局 */
+            flex-direction: column;
             overflow: hidden;
         }
-        /* 核心三欄配置，強制不跑版 */
+        /* 三欄佈局，強制不跑版 */
         .app-container {
             display: flex;
             flex: 1;
@@ -110,17 +109,27 @@
         .input-group { margin-bottom: 12px; }
         .input-group label { display: block; font-size: 12px; color: #4b5563; margin-bottom: 4px; font-weight: 500; }
         .input-control { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+
+        /* 💡 核心：列印成 PDF 時的防跑版與自動隱藏控制面板樣式 */
+        @media print {
+            body { background-color: white !important; height: auto !important; overflow: visible !important; }
+            .left-panel, .right-panel, style, script, #btn-export-pdf, .resize-handle { display: none !important; }
+            .app-container { height: auto !important; width: 100% !important; overflow: visible !important; }
+            .center-panel { background-image: none !important; background-color: white !important; padding: 0 !important; overflow: visible !important; display: block !important; }
+            #export-container { border: none !important; box-shadow: none !important; padding: 0 !important; display: block !important; }
+            .card-element { border-color: #38bdf8 !important; box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
     </style>
 </head>
 <body>
 
-    <div style="background-color: #1e293b; color: white; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; height: 60px; box-sizing: border-box; flex-shrink: 0;">
+    <div id="top-navbar" style="background-color: #1e293b; color: white; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; height: 60px; box-sizing: border-box; flex-shrink: 0;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 18px; font-weight: bold; letter-spacing: 0.05em;">展場陳列與價格排版示意工具</span>
-            <span style="background-color: #ea580c; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">PPTX 超連結版</span>
+            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">PDF 超連結版</span>
         </div>
-        <button id="btn-export-ppt" style="background-color: #f97316; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
-            💾 導出陳列簡報 (PPTX)
+        <button id="btn-export-pdf" style="background-color: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">
+            💾 導出陳列簡報 (PDF)
         </button>
     </div>
 
@@ -339,7 +348,14 @@
                 addCard({ w: current.w, h: current.h, title: current.title + " (複製)", promo: current.promo, orig: current.orig, note: current.note, url: current.url, x: current.x + 20, y: current.y + 20 });
             });
 
-            document.getElementById('btn-export-ppt').addEventListener('click', exportToPPTX);
+            // 💡 點擊按鈕直接開啟瀏覽器列印視窗
+            document.getElementById('btn-export-pdf').addEventListener('click', () => {
+                deselectAll();
+                setTimeout(() => {
+                    window.print();
+                }, 100);
+            });
+            
             workCanvas.addEventListener('mousedown', (e) => { if (e.target === workCanvas) deselectAll(); });
         }
 
@@ -357,15 +373,16 @@
             div.style.left = `${cardObj.x}px`;
             div.style.top = `${cardObj.y}px`;
 
+            // 💡 關鍵優化：在 HTML 結構中將標題包裝成 <a> 標籤，這在網頁列印成 PDF 時會自動被包裝成有效的 PDF 內嵌超連結！
             div.innerHTML = `
-                <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between; pointer-events:none;">
-                    <div class="card-ui-title" style="font-weight:bold; border-bottom:1px solid #b3e5fc; text-align:center; font-size:12px; text-decoration:underline; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cardObj.title}</div>
-                    <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
+                <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
+                    <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; border-bottom:1px solid #b3e5fc; text-align:center; font-size:12px; text-decoration:underline; color:#0c4a6e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cardObj.title}</a>
+                    <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center; pointer-events:none;">
                         <div class="card-ui-orig" style="font-size:10px; color:#94a3b8; text-decoration:line-through;">$${cardObj.orig}</div>
                         <div class="card-ui-promo" style="font-size:14px; font-weight:800; color:#dc2626;">$${cardObj.promo}</div>
                     </div>
-                    <div class="card-ui-note" style="font-size:9px; color:#0369a1; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cardObj.note || '&nbsp;'}</div>
-                    <div class="card-ui-dim" style="position:absolute; bottom:2px; left:4px; font-size:9px; color:#94a3b8; font-family:monospace;">${cardObj.w}x${cardObj.h}</div>
+                    <div class="card-ui-note" style="font-size:9px; color:#0369a1; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none;">${cardObj.note || '&nbsp;'}</div>
+                    <div class="card-ui-dim" style="position:absolute; bottom:2px; left:4px; font-size:9px; color:#94a3b8; font-family:monospace; pointer-events:none;">${cardObj.w}x${cardObj.h}</div>
                 </div>
                 <div class="resize-handle"></div>
             `;
@@ -374,6 +391,9 @@
             let startX, startY, startLeft, startTop, startW, startH;
 
             div.addEventListener('mousedown', (e) => {
+                // 如果點到標題連結，允許點擊跳轉，不觸發拖曳
+                if (e.target.tagName === 'A') return;
+                
                 e.stopPropagation();
                 selectCard(id);
                 if (e.target.classList.contains('resize-handle')) {
@@ -457,7 +477,9 @@
             cardObj.note = document.getElementById('edit-note').value;
             cardObj.url = document.getElementById('edit-url').value;
 
-            el.querySelector('.card-ui-title').textContent = cardObj.title;
+            const titleA = el.querySelector('.card-ui-title');
+            titleA.textContent = cardObj.title;
+            titleA.href = cardObj.url || 'javascript:void(0);';
             el.querySelector('.card-ui-orig').textContent = `$${cardObj.orig}`;
             el.querySelector('.card-ui-promo').textContent = `$${cardObj.promo}`;
             el.querySelector('.card-ui-note').innerHTML = cardObj.note || '&nbsp;';
@@ -474,40 +496,6 @@
             el.style.width = `${cardObj.w * SCALE}px`;
             el.style.height = `${cardObj.h * SCALE}px`;
             el.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
-        }
-
-        function exportToPPTX() {
-            if (typeof PptxGenJS === 'undefined') return alert("套件加載中，請稍候再試");
-            deselectAll();
-            let pptx = new PptxGenJS();
-            pptx.layout = 'LAYOUT_169';
-            let slide = pptx.addSlide();
-
-            const canvasW = parseInt(inputCanvasW.value) || 90;
-            const canvasH = parseInt(inputCanvasH.value) || 30;
-            const canvasName = inputCanvasName.value || "陳列示意圖";
-
-            slide.addText(`${canvasName} (${canvasW} x ${canvasH} cm)`, { x: 0.5, y: 0.4, w: 12, h: 0.5, fontSize: 20, bold: true, color: '1E293B' });
-            slide.addText("💡 提示：放映模式下點擊卡牌即可開啟商品網頁", { x: 0.5, y: 0.9, w: 12, h: 0.3, fontSize: 10, italic: true, color: '64748B' });
-
-            let scaleFactor = Math.min(12.0 / canvasW, 4.5 / canvasH);
-            let pCanvasW = canvasW * scaleFactor, pCanvasH = canvasH * scaleFactor;
-            let pCanvasX = 0.5 + (12.0 - pCanvasW) / 2, pCanvasY = 1.5 + (4.5 - pCanvasH) / 2;
-
-            slide.addShape(pptx.ShapeType.rectangle, { x: pCanvasX, y: pCanvasY, w: pCanvasW, h: pCanvasH, fill: { color: 'F0FDF4' }, line: { color: '10B981', width: 3 } });
-
-            cards.forEach(card => {
-                let itemX = pCanvasX + ((card.x / SCALE) * scaleFactor), itemY = pCanvasY + ((card.y / SCALE) * scaleFactor);
-                let itemW = card.w * scaleFactor, itemH = card.h * scaleFactor;
-                let linkConfig = card.url && card.url.trim().startsWith('http') ? { url: card.url.trim() } : null;
-
-                slide.addShape(pptx.ShapeType.roundRect, { x: itemX, y: itemY, w: itemW, h: itemH, fill: { color: 'F0F9FF' }, line: { color: '38BDF8', width: 1.5 }, hyperlink: linkConfig });
-                slide.addText(card.title, { x: itemX, y: itemY + (itemH * 0.05), w: itemW, h: itemH * 0.25, fontSize: Math.max(10, Math.min(14, Math.round(itemH * 2.5))), bold: true, align: 'center', color: '0369A1', underline: true, hyperlink: linkConfig });
-                slide.addText(`$${card.orig}`, { x: itemX, y: itemY + (itemH * 0.35), w: itemW, h: itemH * 0.15, fontSize: Math.max(8, Math.min(10, Math.round(itemH * 1.8))), align: 'center', color: '94A3B8', strike: true, hyperlink: linkConfig });
-                slide.addText(`$${card.promo}`, { x: itemX, y: itemY + (itemH * 0.50), w: itemW, h: itemH * 0.25, fontSize: Math.max(12, Math.min(18, Math.round(itemH * 3.2))), bold: true, align: 'center', color: 'DC2626', hyperlink: linkConfig });
-                if(card.note) slide.addText(card.note, { x: itemX, y: itemY + (itemH * 0.78), w: itemW, h: itemH * 0.18, fontSize: Math.max(7, Math.min(9, Math.round(itemH * 1.5))), align: 'center', color: '0369A1', hyperlink: linkConfig });
-            });
-            pptx.writeFile({ fileName: `${canvasName}_陳列超連結簡報` });
         }
     </script>
 </body>
