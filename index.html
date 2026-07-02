@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - 終極 PDF 完工版</title>
+    <title>展場陳列與價格排版示意工具 - 終極PDF修復版</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -151,21 +151,43 @@
         }
         .tab-close:hover { color: #ef4444; }
 
-        /* 💡 終極防護：當瀏覽器呼叫列印時，只留下畫布區，其餘面板全部在列印中隱藏 */
+        /* 💡 影子列印容器：網頁畫面上完全隱藏且不佔空間 */
+        #print-area-container {
+            display: none;
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+        }
+
+        /* 💡 修正後的 PDF 列印媒體樣式：徹底移除多餘空白頁 */
         @media print {
-            body { background-color: white !important; height: auto !important; overflow: visible !important; }
-            .left-panel, .right-panel, .tab-bar, #top-navbar, .resize-handle, #zoom-controls { display: none !important; }
-            .app-container { height: auto !important; width: 100% !important; overflow: visible !important; display: block !important; }
-            .center-panel { background-image: none !important; background-color: white !important; padding: 0 !important; overflow: visible !important; display: block !important; }
+            body, html { background-color: white !important; height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
+            #top-navbar, .app-container { display: none !important; }
+            
+            #print-area-container { 
+                display: block !important; 
+                position: static !important; 
+                width: 100% !important; 
+                overflow: visible !important; 
+            }
+            .print-page-wrapper {
+                page-break-after: always;
+                break-after: page;
+                display: block !important;
+                box-sizing: border-box;
+            }
+            /* 💡 移除最後一頁的強制換頁，防止生出空白頁 */
+            .print-page-wrapper:last-child {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
             .canvas-container-wrapper { 
-                transform: scale(1) !important; /* 確保列印維持 100% 精準尺寸 */
+                transform: scale(1) !important;
                 border: none !important; 
                 box-shadow: none !important; 
                 padding: 0 !important; 
                 display: block !important;
-                page-break-after: always;
-                break-after: page;
-                margin-bottom: 50px;
+                margin: 0 auto 20px auto !important;
             }
             .card-element { border-color: #38bdf8 !important; box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
@@ -176,7 +198,7 @@
     <div id="top-navbar" style="background-color: #1e293b; color: white; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; height: 60px; box-sizing: border-box; flex-shrink: 0;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 18px; font-weight: bold; letter-spacing: 0.05em;">展場陳列與價格排版示意工具</span>
-            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">PDF 多分頁版</span>
+            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">PDF 多分頁完工版</span>
         </div>
         <button id="btn-export-pdf" style="background-color: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">
             💾 導出所有陳列頁面 (PDF)
@@ -228,7 +250,7 @@
                         <input type="number" id="custom-card-h" placeholder="高 cm" class="input-control" style="text-align:center; padding:4px;">
                     </div>
                     <input type="text" id="custom-card-title" placeholder="商品預設名稱" class="input-control" style="margin-bottom:8px; padding:6px;">
-                    <input type="button" id="btn-add-custom-card" value="生成並放入畫布" style="width:100%; background-color: #2563eb; color:white; padding:8px; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight: bold;">
+                    <button id="btn-add-custom-card" style="width:100%; background-color: #2563eb; color:white; padding:8px; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight: bold;">生成並放入畫布</button>
                 </div>
             </div>
         </aside>
@@ -305,6 +327,8 @@
         </aside>
     </div>
 
+    <div id="print-area-container"></div>
+
     <script>
         let pageData = [
             { id: "page-1", name: "櫃台後鐵網A", w: 90, h: 30, cards: [] }
@@ -328,6 +352,7 @@
         const propertyPlaceholder = document.getElementById('property-placeholder');
         const propertyForm = document.getElementById('property-form');
         const pageTabsContainer = document.getElementById('page-tabs');
+        const printAreaContainer = document.getElementById('print-area-container');
 
         window.addEventListener('DOMContentLoaded', () => {
             loadPresetsToDropdown();
@@ -402,13 +427,7 @@
 
         document.getElementById('btn-add-new-page').addEventListener('click', () => {
             const newId = `page-${Date.now()}`;
-            const newPage = {
-                id: newId,
-                name: `新陳列區-${pageData.length + 1}`,
-                w: 90,
-                h: 30,
-                cards: []
-            };
+            const newPage = { id: newId, name: `新陳列區-${pageData.length + 1}`, w: 90, h: 30, cards: [] };
             pageData.push(newPage);
             switchPage(newId);
         });
@@ -417,9 +436,7 @@
             if (pageData.length <= 1) return;
             if (confirm("確定要刪除這張陳列圖頁面嗎？")) {
                 pageData = pageData.filter(p => p.id !== pageId);
-                if (activePageId === pageId) {
-                    activePageId = pageData[pageData.length - 1].id;
-                }
+                if (activePageId === pageId) { activePageId = pageData[pageData.length - 1].id; }
                 switchPage(activePageId);
             }
         }
@@ -435,28 +452,15 @@
             canvasDisplaySize.textContent = `${w} x ${h} cm`;
 
             const activePage = pageData.find(p => p.id === activePageId);
-            if (activePage) {
-                activePage.w = w;
-                activePage.h = h;
-                activePage.name = name;
-            }
+            if (activePage) { activePage.w = w; activePage.h = h; activePage.name = name; }
             const activeTab = document.querySelector('.tab-button.active span');
             if(activeTab) activeTab.textContent = name;
         }
 
         function setupZoomListeners() {
-            document.getElementById('btn-zoom-in').addEventListener('click', () => {
-                currentZoom = Math.min(150, currentZoom + 10);
-                applyZoom();
-            });
-            document.getElementById('btn-zoom-out').addEventListener('click', () => {
-                currentZoom = Math.max(30, currentZoom - 10);
-                applyZoom();
-            });
-            document.getElementById('btn-zoom-reset').addEventListener('click', () => {
-                currentZoom = 100;
-                applyZoom();
-            });
+            document.getElementById('btn-zoom-in').addEventListener('click', () => { currentZoom = Math.min(150, currentZoom + 10); applyZoom(); });
+            document.getElementById('btn-zoom-out').addEventListener('click', () => { currentZoom = Math.max(30, currentZoom - 10); applyZoom(); });
+            document.getElementById('btn-zoom-reset').addEventListener('click', () => { currentZoom = 100; applyZoom(); });
         }
 
         function applyZoom() {
@@ -679,11 +683,10 @@
             el.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
         }
 
-        // 💡 終極安全：利用 CSS 控制列印隱藏，完全不重整網頁的合併多頁 PDF 導出法
+        // 💡 終極修正版：完全不更動主畫面 DOM、用完秒清空的影子列印技術
         function exportAllPagesToPDF() {
             deselectAll();
             
-            // 儲存目前編輯中的分頁數值
             const activePage = pageData.find(p => p.id === activePageId);
             if (activePage) {
                 activePage.w = parseInt(inputCanvasW.value) || 90;
@@ -691,22 +694,19 @@
                 activePage.name = inputCanvasName.value || "未命名陳列區";
             }
 
-            // 備份當前的中央操作面板原始 DOM 結構
-            const originalCenterPanelHTML = document.getElementById('canvas-wrapper').innerHTML;
-            const centerPanel = document.getElementById('canvas-wrapper');
+            // 1. 清空列印區
+            printAreaContainer.innerHTML = "";
 
-            // 建立列印專用的大容器
-            let printContainer = document.createElement('div');
-            printContainer.style.width = "100%";
-
-            // 把所有分頁的資料一次塞進去生成
+            // 2. 在背景影子區，默默建立所有要導出的陳列圖投影片外殼
             pageData.forEach(page => {
+                let pageWrapper = document.createElement('div');
+                pageWrapper.className = "print-page-wrapper"; // 💡 專屬單頁外殼
+                
                 let wrapper = document.createElement('div');
                 wrapper.className = "canvas-container-wrapper";
                 
                 let innerContainer = document.createElement('div');
                 innerContainer.style.display = "inline-block";
-                innerContainer.style.width = "100%";
                 
                 innerContainer.innerHTML = `
                     <div style="border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
@@ -720,14 +720,11 @@
                 `;
                 
                 wrapper.appendChild(innerContainer);
-                printContainer.appendChild(wrapper);
+                pageWrapper.appendChild(wrapper);
+                printAreaContainer.appendChild(pageWrapper);
             });
 
-            // 暫時用列印容器蓋掉中間畫面
-            centerPanel.innerHTML = "";
-            centerPanel.appendChild(printContainer);
-
-            // 把卡牌塞到各自對應的列印畫布內
+            // 3. 幫背景影子區塞入對應的卡牌 DOM 節點
             pageData.forEach(page => {
                 const targetPrintCanvas = document.getElementById(`print-canvas-${page.id}`);
                 page.cards.forEach(card => {
@@ -752,15 +749,15 @@
                 });
             });
 
-            // 💡 叫出列印視窗，完成後無痕復原畫面
+            // 4. 喚起系統列印視窗
             setTimeout(() => {
                 window.print();
+                
+                // 💡 關鍵修復：印完直接清空背景列印區，完全不去重整（Reload）主畫面！
                 setTimeout(() => {
-                    // 完美復原，免重新整理！
-                    centerPanel.innerHTML = originalCenterPanelHTML;
-                    switchPage(activePageId); // 重新載入當前編輯頁
-                }, 200);
-            }, 200);
+                    printAreaContainer.innerHTML = "";
+                }, 100);
+            }, 100);
         }
     </script>
 </body>
