@@ -295,3 +295,592 @@
                 </div>
             </div>
         </main>
+
+        <aside class="right-panel">
+            <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">⚙️ 3. 卡牌屬性編輯</h3>
+            <div id="property-placeholder" style="color: #9ca3af; padding-top: 40px; text-align: center; font-size: 14px;">
+                <p>📭 尚未選擇卡牌</p>
+                <p style="font-size: 12px; color: #cbd5e1;">請點擊畫布上的卡牌進行編輯</p>
+            </div>
+            <form id="property-form" style="display: none;" onsubmit="return false;">
+                <input type="hidden" id="edit-card-id">
+                <div class="input-group">
+                    <label id="label-title">商品/標題名稱</label>
+                    <input type="text" id="edit-title" class="input-control">
+                </div>
+                <div style="display: flex; gap: 8px;" class="input-group" id="edit-price-group">
+                    <div style="flex: 1;">
+                        <label>展場優惠價</label>
+                        <input type="text" id="edit-promo" class="input-control" style="color: #dc2626; font-weight: bold;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>原價</label>
+                        <input type="text" id="edit-orig" class="input-control" style="text-decoration: line-through; color: #6b7280;">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; background-color: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;" class="input-group">
+                    <div style="flex: 1;">
+                        <label style="font-size:11px;">精準寬 (cm)</label>
+                        <input type="number" id="edit-w" class="input-control" style="text-align:center; font-family:monospace; padding:4px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size:11px;">精準高 (cm)</label>
+                        <input type="number" id="edit-h" class="input-control" style="text-align:center; font-family:monospace; padding:4px;">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>外部連結網址</label>
+                    <input type="url" id="edit-url" placeholder="https://..." class="input-control" style="color: #2563eb; font-family: monospace;">
+                </div>
+                <div class="input-group" id="edit-note-group">
+                    <label id="label-note">備註/規格說明</label>
+                    <input type="text" id="edit-note" class="input-control">
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                    <button id="btn-delete-card" style="flex:1; background-color: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; padding: 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">🗑️ 刪除</button>
+                    <button id="btn-duplicate-card" style="flex:1; background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">📋 複製</button>
+                </div>
+            </form>
+        </aside>
+    </div>
+
+    <div id="print-area-container"></div>
+
+    <script>
+        let pageData = JSON.parse(localStorage.getItem('exhibition_page_data')) || [
+            { id: "page-1", name: "櫃台後鐵網A", w: 90, h: 30, cards: [] }
+        ];
+
+        let activePageId = localStorage.getItem('exhibition_active_page_id') || pageData[0].id;
+        if(!pageData.some(p => p.id === activePageId)) {
+            activePageId = pageData[0].id;
+        }
+
+        let cardCounter = 0;
+        pageData.forEach(p => {
+            p.cards.forEach(c => {
+                const numericId = parseInt(c.id.replace('card-', ''));
+                if(!isNaN(numericId) && numericId > cardCounter) {
+                    cardCounter = numericId;
+                }
+            });
+        });
+
+        let currentZoom = 100;
+        const SCALE = 10;
+        let selectedCardId = null;
+        let customPresets = JSON.parse(localStorage.getItem('custom_canvas_presets')) || [];
+
+        const workCanvas = document.getElementById('work-canvas');
+        const canvasHolder = document.getElementById('canvas-holder-element');
+        const zoomDisplay = document.getElementById('zoom-display');
+        const inputCanvasW = document.getElementById('input-canvas-w');
+        const inputCanvasH = document.getElementById('input-canvas-h');
+        const inputCanvasName = document.getElementById('input-canvas-name');
+        const selectCanvasPreset = document.getElementById('select-canvas-preset');
+        const canvasDisplayName = document.getElementById('canvas-display-name');
+        const canvasDisplaySize = document.getElementById('canvas-display-size');
+        const propertyPlaceholder = document.getElementById('property-placeholder');
+        const propertyForm = document.getElementById('property-form');
+        const pageTabsContainer = document.getElementById('page-tabs');
+        const printAreaContainer = document.getElementById('print-area-container');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPresetsToDropdown();
+            renderTabs();
+            // 💡 初始化載入，加入 true 告訴程式「這是重新整理，不要偷存髒資料」
+            switchPage(activePageId, true);
+            setupEventListeners();
+            setupZoomListeners();
+        });
+
+        function saveToLocalStorage() {
+            localStorage.setItem('exhibition_page_data', JSON.stringify(pageData));
+            localStorage.setItem('exhibition_active_page_id', activePageId);
+        }
+
+        function loadPresetsToDropdown() {
+            selectCanvasPreset.innerHTML = `
+                <option value="" disabled selected hidden>--- 選擇常用尺寸範本 ---</option>
+                <option value="90x30">櫃位後鐵網 A (90 x 30 cm)</option>
+                <option value="120x60">大型陳列架 B (120 x 60 cm)</option>
+                <option value="60x40">中型展示櫃 C (60 x 40 cm)</option>
+                <option value="100x100">正方形展板 D (100 x 100 cm)</option>
+            `;
+            customPresets.forEach(preset => {
+                const opt = document.createElement('option');
+                opt.value = `${preset.w}x${preset.h}`;
+                opt.textContent = `${preset.name} (${preset.w} x ${preset.h} cm)`;
+                selectCanvasPreset.appendChild(opt);
+            });
+        }
+
+        function renderTabs() {
+            pageTabsContainer.innerHTML = "";
+            pageData.forEach((page) => {
+                const btn = document.createElement('button');
+                btn.className = `tab-button ${page.id === activePageId ? 'active' : ''}`;
+                btn.innerHTML = `<span>${page.name}</span>`;
+                if (pageData.length > 1) {
+                    const closeSpan = document.createElement('span');
+                    closeSpan.className = "tab-close";
+                    closeSpan.innerHTML = " &times;";
+                    closeSpan.addEventListener('click', (e) => { e.stopPropagation(); deletePage(page.id); });
+                    btn.appendChild(closeSpan);
+                }
+                btn.addEventListener('click', () => switchPage(page.id));
+                pageTabsContainer.appendChild(btn);
+            });
+        }
+
+        // 💡 關鍵修正點：加入 isInit 判斷
+        function switchPage(pageId, isInit = false) {
+            // 如果不是剛重整網頁，才把當前輸入框資料存回去
+            if (!isInit) {
+                const activePage = pageData.find(p => p.id === activePageId);
+                if (activePage) {
+                    activePage.w = parseInt(inputCanvasW.value) || 90;
+                    activePage.h = parseInt(inputCanvasH.value) || 30;
+                    activePage.name = inputCanvasName.value || "未命名陳列區";
+                }
+            }
+            
+            activePageId = pageId;
+            const targetPage = pageData.find(p => p.id === pageId);
+            
+            // 正確載入目標頁面的名字與尺寸
+            inputCanvasW.value = targetPage.w;
+            inputCanvasH.value = targetPage.h;
+            inputCanvasName.value = targetPage.name;
+            
+            selectCanvasPreset.selectedIndex = 0;
+            
+            workCanvas.innerHTML = "";
+            deselectAll();
+            updateCanvasSizeUI(); 
+            renderTabs();
+            targetPage.cards.forEach(cardData => recreateCardDOM(cardData));
+            saveToLocalStorage(); 
+        }
+
+        document.getElementById('btn-add-new-page').addEventListener('click', () => {
+            const newId = `page-${Date.now()}`;
+            pageData.push({ id: newId, name: `新陳列區-${pageData.length + 1}`, w: 90, h: 30, cards: [] });
+            switchPage(newId);
+            saveToLocalStorage();
+        });
+
+        function deletePage(pageId) {
+            if (pageData.length <= 1) return;
+            if (confirm("確定要刪除這張陳列圖頁面嗎？")) {
+                pageData = pageData.filter(p => p.id !== pageId);
+                if (activePageId === pageId) { activePageId = pageData[pageData.length - 1].id; }
+                switchPage(activePageId);
+                saveToLocalStorage();
+            }
+        }
+
+        function updateCanvasSize() {
+            const w = parseInt(inputCanvasW.value) || 90;
+            const h = parseInt(inputCanvasH.value) || 30;
+            const name = inputCanvasName.value || "未命名陳列區";
+            
+            workCanvas.style.width = `${w * SCALE}px`;
+            workCanvas.style.height = `${h * SCALE}px`;
+            canvasDisplayName.textContent = name;
+            canvasDisplaySize.textContent = `${w} x ${h} cm`;
+            
+            const activePage = pageData.find(p => p.id === activePageId);
+            if (activePage) { 
+                activePage.w = w; 
+                activePage.h = h; 
+                activePage.name = name; 
+            }
+            
+            const activeTab = document.querySelector('.tab-button.active span');
+            if(activeTab) activeTab.textContent = name;
+            
+            saveToLocalStorage();
+        }
+
+        function updateCanvasSizeUI() {
+            const w = parseInt(inputCanvasW.value) || 90;
+            const h = parseInt(inputCanvasH.value) || 30;
+            const name = inputCanvasName.value || "未命名陳列區";
+            workCanvas.style.width = `${w * SCALE}px`;
+            workCanvas.style.height = `${h * SCALE}px`;
+            canvasDisplayName.textContent = name;
+            canvasDisplaySize.textContent = `${w} x ${h} cm`;
+        }
+
+        function setupZoomListeners() {
+            document.getElementById('btn-zoom-in').addEventListener('click', () => { currentZoom = Math.min(150, currentZoom + 10); applyZoom(); });
+            document.getElementById('btn-zoom-out').addEventListener('click', () => { currentZoom = Math.max(30, currentZoom - 10); applyZoom(); });
+            document.getElementById('btn-zoom-reset').addEventListener('click', () => { currentZoom = 100; applyZoom(); });
+        }
+
+        function applyZoom() {
+            zoomDisplay.textContent = `${currentZoom}%`;
+            canvasHolder.style.transform = `scale(${currentZoom / 100})`;
+        }
+
+        function setupEventListeners() {
+            inputCanvasW.addEventListener('input', updateCanvasSize);
+            inputCanvasH.addEventListener('input', updateCanvasSize);
+            inputCanvasName.addEventListener('input', updateCanvasSize);
+
+            selectCanvasPreset.addEventListener('change', (e) => {
+                if(!e.target.value) return;
+                const [w, h] = e.target.value.split('x');
+                inputCanvasW.value = w;
+                inputCanvasH.value = h;
+                updateCanvasSize();
+            });
+
+            document.getElementById('btn-save-canvas-preset').addEventListener('click', () => {
+                const w = parseInt(inputCanvasW.value);
+                const h = parseInt(inputCanvasH.value);
+                const name = prompt("請輸入此自訂尺寸的範本名稱：");
+                if(!name || !name.trim()) return;
+                customPresets.push({ name: name.trim(), w, h });
+                localStorage.setItem('custom_canvas_presets', JSON.stringify(customPresets));
+                loadPresetsToDropdown();
+                selectCanvasPreset.value = `${w}x${h}`;
+                alert(`已將 ${w}x${h} cm 儲存為範本「${name}」`);
+            });
+
+            document.getElementById('btn-add-large').addEventListener('click', () => addCard({ type: "product", w: 15, h: 20, title: "Race Belt 號碼帶", promo: "420", orig: "500", note: "展場價" }));
+            document.getElementById('btn-add-medium').addEventListener('click', () => addCard({ type: "product", w: 12, h: 12, title: "UNIQ 手腕帶", promo: "380", orig: "450", note: "展場價" }));
+            document.getElementById('btn-add-horizontal').addEventListener('click', () => addCard({ type: "product", w: 20, h: 10, title: "Thin On/Off.3 透氣頭帶", promo: "550", orig: "650", note: "展場價" }));
+            document.getElementById('btn-add-heading').addEventListener('click', () => addCard({ type: "heading", w: 40, h: 10, title: "COMPRESSPORT 品牌特惠區", promo: "", orig: "", note: "" }));
+            document.getElementById('btn-add-annotation').addEventListener('click', () => addCard({ type: "annotation", w: 30, h: 12, title: "📢 活動說明文案填寫處", promo: "", orig: "", note: "" }));
+
+            document.getElementById('btn-add-custom-card').addEventListener('click', () => {
+                const w = parseInt(document.getElementById('custom-card-w').value) || 10;
+                const h = parseInt(document.getElementById('custom-card-h').value) || 10;
+                const title = document.getElementById('custom-card-title').value.trim() || "自訂商品卡";
+                addCard({ type: "product", w, h, title, promo: "0", orig: "0", note: "" });
+            });
+
+            document.getElementById('edit-title').addEventListener('input', syncFormToCard);
+            document.getElementById('edit-promo').addEventListener('input', syncFormToCard);
+            document.getElementById('edit-orig').addEventListener('input', syncFormToCard);
+            document.getElementById('edit-note').addEventListener('input', syncFormToCard);
+            document.getElementById('edit-url').addEventListener('input', syncFormToCard);
+            
+            document.getElementById('edit-w').addEventListener('input', syncFormToCardDimensions);
+            document.getElementById('edit-h').addEventListener('input', syncFormToCardDimensions);
+
+            document.getElementById('btn-delete-card').addEventListener('click', () => {
+                if (!selectedCardId) return;
+                const el = document.getElementById(selectedCardId);
+                if (el) el.remove();
+                const activePage = pageData.find(p => p.id === activePageId);
+                activePage.cards = activePage.cards.filter(c => c.id !== selectedCardId);
+                deselectAll();
+                saveToLocalStorage();
+            });
+
+            document.getElementById('btn-duplicate-card').addEventListener('click', () => {
+                if (!selectedCardId) return;
+                const activePage = pageData.find(p => p.id === activePageId);
+                const current = activePage.cards.find(c => c.id === selectedCardId);
+                if (!current) return;
+                addCard({ type: current.type, w: current.w, h: current.h, title: current.title + " (複製)", promo: current.promo, orig: current.orig, note: current.note, url: current.url, x: current.x + 25, y: current.y + 25 });
+            });
+
+            document.getElementById('btn-clear-storage').addEventListener('click', () => {
+                if (confirm("確定要重置並清空所有排版分頁嗎？所有資料都將消失！")) {
+                    localStorage.removeItem('exhibition_page_data');
+                    localStorage.removeItem('exhibition_active_page_id');
+                    location.reload();
+                }
+            });
+
+            document.getElementById('btn-export-pdf').addEventListener('click', exportAllPagesToPDF);
+            workCanvas.addEventListener('mousedown', (e) => { if (e.target === workCanvas) deselectAll(); });
+        }
+
+        function addCard(data) {
+            cardCounter++;
+            const id = `card-${cardCounter}`;
+            const cardObj = { id, type: data.type || "product", w: data.w, h: data.h, title: data.title, promo: data.promo, orig: data.orig, note: data.note, url: data.url || "", x: data.x || 20, y: data.y || 20 };
+            const activePage = pageData.find(p => p.id === activePageId);
+            activePage.cards.push(cardObj);
+            recreateCardDOM(cardObj);
+            saveToLocalStorage();
+        }
+
+        function recreateCardDOM(cardObj) {
+            const id = cardObj.id;
+            const div = document.createElement('div');
+            div.id = id;
+            
+            let typeClass = "card-product";
+            if (cardObj.type === "heading") typeClass = "card-heading";
+            if (cardObj.type === "annotation") typeClass = "card-annotation";
+            
+            div.className = `card-element ${typeClass}`;
+            div.style.width = `${cardObj.w * SCALE}px`;
+            div.style.height = `${cardObj.h * SCALE}px`;
+            div.style.left = `${cardObj.x}px`;
+            div.style.top = `${cardObj.y}px`;
+
+            let innerHTML = "";
+            if (cardObj.type === "heading") {
+                innerHTML = `
+                    <div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; text-align:center;">
+                        <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; font-size:16px; color:#1e293b; text-decoration:none;">${cardObj.title}</a>
+                        <div class="card-ui-dim" style="position:absolute; bottom:2px; left:4px; font-size:9px; color:#94a3b8; font-family:monospace; pointer-events:none;">${cardObj.w}x${cardObj.h}</div>
+                    </div>
+                `;
+            } else if (cardObj.type === "annotation") {
+                innerHTML = `
+                    <div style="width:100%; height:100%; display:flex; justify-content:flex-start; align-items:flex-start; text-align:left;">
+                        <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-size:12px; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${cardObj.title}</a>
+                        <div class="card-ui-dim" style="position:absolute; bottom:2px; left:4px; font-size:9px; color:#94a3b8; font-family:monospace; pointer-events:none;">${cardObj.w}x${cardObj.h}</div>
+                    </div>
+                `;
+            } else {
+                innerHTML = `
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
+                        <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; border-bottom:1px solid #b3e5fc; text-align:center; font-size:12px; text-decoration:underline; color:#0c4a6e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cardObj.title}</a>
+                        <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
+                            <div class="card-ui-orig" style="font-size:10px; color:#94a3b8; text-decoration:line-through;">$${cardObj.orig}</div>
+                            <div class="card-ui-promo" style="font-size:14px; font-weight:800; color:#dc2626;">$${cardObj.promo}</div>
+                        </div>
+                        <div class="card-ui-note" style="font-size:9px; color:#0369a1; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none;">${cardObj.note || '&nbsp;'}</div>
+                        <div class="card-ui-dim" style="position:absolute; bottom:2px; left:4px; font-size:9px; color:#94a3b8; font-family:monospace; pointer-events:none;">${cardObj.w}x${cardObj.h}</div>
+                    </div>
+                `;
+            }
+            
+            div.innerHTML += `<div class="resize-handle"></div>`;
+            div.insertAdjacentHTML('afterbegin', innerHTML);
+
+            let isDragging = false, isResizing = false;
+            let startX, startY, startLeft, startTop, startW, startH;
+
+            div.addEventListener('mousedown', (e) => {
+                if (e.target.tagName === 'A') return;
+                e.stopPropagation();
+                selectCard(id);
+                if (e.target.classList.contains('resize-handle')) {
+                    isResizing = true;
+                    startX = e.clientX; startY = e.clientY;
+                    startW = div.offsetWidth; startH = div.offsetHeight;
+                } else {
+                    isDragging = true;
+                    startX = e.clientX; startY = e.clientY;
+                    startLeft = div.offsetLeft; startTop = div.offsetTop;
+                    document.querySelectorAll('.card-element').forEach(c => c.style.zIndex = 10);
+                    div.style.zIndex = 50;
+                }
+
+                const moveHandler = (mE) => {
+                    const zoomRatio = currentZoom / 100;
+                    if (isDragging) {
+                        let l = startLeft + (mE.clientX - startX) / zoomRatio;
+                        let t = startTop + (mE.clientY - startY) / zoomRatio;
+                        div.style.left = `${l}px`; div.style.top = `${t}px`;
+                        cardObj.x = l; cardObj.y = t;
+                    } else if (isResizing) {
+                        let w = startW + (mE.clientX - startX) / zoomRatio;
+                        let h = startH + (mE.clientY - startY) / zoomRatio;
+                        w = Math.max(40, w);
+                        h = Math.max(40, h);
+                        div.style.width = `${w}px`; div.style.height = `${h}px`;
+                        cardObj.w = Math.round(w / SCALE); cardObj.h = Math.round(h / SCALE);
+                        div.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
+                        if (selectedCardId === id) { document.getElementById('edit-w').value = cardObj.w; document.getElementById('edit-h').value = cardObj.h; }
+                    }
+                };
+
+                const upHandler = () => {
+                    isDragging = false; isResizing = false;
+                    document.removeEventListener('mousemove', moveHandler);
+                    document.removeEventListener('mouseup', upHandler);
+                    saveToLocalStorage();
+                };
+                document.addEventListener('mousemove', moveHandler);
+                document.addEventListener('mouseup', upHandler);
+            });
+
+            workCanvas.appendChild(div);
+            selectCard(id);
+        }
+
+        function selectCard(id) {
+            document.querySelectorAll('.card-element').forEach(el => el.classList.remove('selected'));
+            selectedCardId = id;
+            const element = document.getElementById(id);
+            if(element) element.classList.add('selected');
+            
+            const activePage = pageData.find(p => p.id === activePageId);
+            const cardObj = activePage.cards.find(c => c.id === id);
+            if (cardObj) {
+                propertyPlaceholder.style.display = 'none';
+                propertyForm.style.display = 'block';
+                document.getElementById('edit-card-id').value = id;
+                document.getElementById('edit-title').value = cardObj.title;
+                document.getElementById('edit-w').value = cardObj.w;
+                document.getElementById('edit-h').value = cardObj.h;
+                document.getElementById('edit-url').value = cardObj.url || "";
+                
+                const priceGroup = document.getElementById('edit-price-group');
+                const noteGroup = document.getElementById('edit-note-group');
+                const labelTitle = document.getElementById('label-title');
+                
+                if (cardObj.type !== "product") {
+                    priceGroup.style.display = 'none';
+                    noteGroup.style.display = 'none';
+                    labelTitle.textContent = cardObj.type === "heading" ? "大標題內容" : "活動備註內文";
+                } else {
+                    priceGroup.style.display = 'flex';
+                    noteGroup.style.display = 'block';
+                    labelTitle.textContent = "商品名稱";
+                    document.getElementById('edit-promo').value = cardObj.promo;
+                    document.getElementById('edit-orig').value = cardObj.orig;
+                    document.getElementById('edit-note').value = cardObj.note;
+                }
+            }
+        }
+
+        function deselectAll() {
+            selectedCardId = null;
+            document.querySelectorAll('.card-element').forEach(el => el.classList.remove('selected'));
+            propertyPlaceholder.style.display = 'block';
+            propertyForm.style.display = 'none';
+        }
+
+        function syncFormToCard() {
+            if (!selectedCardId) return;
+            const activePage = pageData.find(p => p.id === activePageId);
+            const cardObj = activePage.cards.find(c => c.id === selectedCardId);
+            const el = document.getElementById(selectedCardId);
+            if (!cardObj || !el) return;
+            
+            cardObj.title = document.getElementById('edit-title').value;
+            cardObj.url = document.getElementById('edit-url').value;
+
+            const titleA = el.querySelector('.card-ui-title');
+            if (titleA) {
+                titleA.textContent = cardObj.title;
+                titleA.href = cardObj.url || 'javascript:void(0);';
+            }
+            
+            if (cardObj.type === "product") {
+                cardObj.promo = document.getElementById('edit-promo').value;
+                cardObj.orig = document.getElementById('edit-orig').value;
+                cardObj.note = document.getElementById('edit-note').value;
+                
+                const origDiv = el.querySelector('.card-ui-orig');
+                const promoDiv = el.querySelector('.card-ui-promo');
+                const noteDiv = el.querySelector('.card-ui-note');
+                
+                if (origDiv) origDiv.textContent = `$${cardObj.orig}`;
+                if (promoDiv) promoDiv.textContent = `$${cardObj.promo}`;
+                if (noteDiv) noteDiv.innerHTML = cardObj.note || '&nbsp;';
+            }
+            saveToLocalStorage();
+        }
+
+        function syncFormToCardDimensions() {
+            if (!selectedCardId) return;
+            const activePage = pageData.find(p => p.id === activePageId);
+            const cardObj = activePage.cards.find(c => c.id === selectedCardId);
+            const el = document.getElementById(selectedCardId);
+            if (!cardObj || !el) return;
+
+            const nw = parseInt(document.getElementById('edit-w').value) || 5;
+            const nh = parseInt(document.getElementById('edit-h').value) || 5;
+            
+            cardObj.w = nw;
+            cardObj.h = nh;
+            el.style.width = `${cardObj.w * SCALE}px`;
+            el.style.height = `${cardObj.h * SCALE}px`;
+            const dimDiv = el.querySelector('.card-ui-dim');
+            if (dimDiv) dimDiv.textContent = `${cardObj.w}x${cardObj.h}`;
+            saveToLocalStorage();
+        }
+
+        function exportAllPagesToPDF() {
+            deselectAll();
+            const activePage = pageData.find(p => p.id === activePageId);
+            if (activePage) {
+                activePage.w = parseInt(inputCanvasW.value) || 90;
+                activePage.h = parseInt(inputCanvasH.value) || 30;
+                activePage.name = inputCanvasName.value || "未命名陳列區";
+            }
+            saveToLocalStorage();
+
+            printAreaContainer.innerHTML = "";
+
+            pageData.forEach(page => {
+                let pageWrapper = document.createElement('div');
+                pageWrapper.className = "print-page-wrapper";
+                let wrapper = document.createElement('div');
+                wrapper.className = "canvas-container-wrapper";
+                let innerContainer = document.createElement('div');
+                innerContainer.style.display = "inline-block";
+                
+                innerContainer.innerHTML = `
+                    <div style="border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+                        <div>
+                            <h2 style="margin: 0; font-size: 18px; color: #1e293b; font-weight: bold;">${page.name}</h2>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280;">比例尺：10 像素(px) = 1 公分(cm)</p>
+                        </div>
+                        <div style="font-family: monospace; font-weight: bold; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #334155;">${page.w} x ${page.h} cm</div>
+                    </div>
+                    <div id="print-canvas-${page.id}" style="position: relative; border: 4px solid #10b981; background-color: #ffffff; width: ${page.w * SCALE}px; height: ${page.h * SCALE}px;"></div>
+                `;
+                wrapper.appendChild(innerContainer);
+                pageWrapper.appendChild(wrapper);
+                pageWrapper.appendChild(wrapper);
+                printAreaContainer.appendChild(pageWrapper);
+            });
+
+            pageData.forEach(page => {
+                const targetPrintCanvas = document.getElementById(`print-canvas-${page.id}`);
+                page.cards.forEach(card => {
+                    const cDiv = document.createElement('div');
+                    let typeClass = "card-product";
+                    if (card.type === "heading") typeClass = "card-heading";
+                    if (card.type === "annotation") typeClass = "card-annotation";
+                    
+                    cDiv.className = `card-element ${typeClass}`;
+                    cDiv.style.width = `${card.w * SCALE}px`;
+                    cDiv.style.height = `${card.h * SCALE}px`;
+                    cDiv.style.left = `${card.x}px`;
+                    cDiv.style.top = `${card.y}px`;
+                    
+                    let bodyStr = "";
+                    if (card.type === "heading") {
+                        bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; text-align:center;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; font-size:16px; color:#1e293b; text-decoration:none;">${card.title}</a></div>`;
+                    } else if (card.type === "annotation") {
+                        bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:flex-start; align-items:flex-start; text-align:left;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-size:12px; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${card.title}</a></div>`;
+                    } else {
+                        bodyStr = `
+                            <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
+                                <a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; border-bottom:1px solid #b3e5fc; text-align:center; font-size:12px; text-decoration:underline; color:#0c4a6e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${card.title}</a>
+                                <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
+                                    <div style="font-size:10px; color:#94a3b8; text-decoration:line-through;">$${card.orig}</div>
+                                    <div style="font-size:14px; font-weight:800; color:#dc2626;">$${card.promo}</div>
+                                </div>
+                                <div style="font-size:9px; color:#0369a1; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${card.note || '&nbsp;'}</div>
+                            </div>
+                        `;
+                    }
+                    cDiv.innerHTML = bodyStr;
+                    targetPrintCanvas.appendChild(cDiv);
+                });
+            });
+
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => { printAreaContainer.innerHTML = ""; }, 100);
+            }, 100);
+        }
+    </script>
+</body>
+</html>
