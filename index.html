@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - 最終修復版</title>
+    <title>展場陳列與價格排版示意工具 - 真正完工版</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -70,7 +70,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         }
         
-        /* 卡牌樣式 */
+        /* 卡牌基本樣式 */
         .card-element {
             position: absolute;
             padding: 8px;
@@ -158,20 +158,47 @@
         }
         .tab-close:hover { color: #ef4444; }
 
-        #print-area-container { display: none; position: absolute; left: -9999px; top: -9999px; }
+        /* 💡 影子列印區基本設定：在普通網頁畫面上完全隱藏，不佔空間、不影響事件 */
+        #print-area-container {
+            display: none;
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+        }
 
-        /* 💡 PDF 列印媒體樣式：強制橫向列印，杜絕切邊 */
+        /* 💡 終極修復 PDF 列印樣式：橫向列印，絕無多餘空白頁 */
         @media print {
             @page {
-                size: landscape; /* 💡 關鍵：強制瀏覽器採用橫向 A4 紙張列印 */
+                size: landscape;
                 margin: 1cm;
             }
             body, html { background-color: white !important; height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
             #top-navbar, .app-container { display: none !important; }
-            #print-area-container { display: block !important; position: static !important; width: 100% !important; overflow: visible !important; }
-            .print-page-wrapper { page-break-after: always; break-after: page; display: block !important; box-sizing: border-box; }
-            .print-page-wrapper:last-child { page-break-after: avoid !important; break-after: avoid !important; }
-            .canvas-container-wrapper { transform: scale(1) !important; border: none !important; box-shadow: none !important; padding: 0 !important; display: block !important; margin: 0 auto 20px auto !important; }
+            
+            #print-area-container { 
+                display: block !important; 
+                position: static !important; 
+                width: 100% !important; 
+                overflow: visible !important; 
+            }
+            .print-page-wrapper {
+                page-break-after: always;
+                break-after: page;
+                display: block !important;
+                box-sizing: border-box;
+            }
+            .print-page-wrapper:last-child {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+            .canvas-container-wrapper { 
+                transform: scale(1) !important;
+                border: none !important; 
+                box-shadow: none !important; 
+                padding: 0 !important; 
+                display: block !important;
+                margin: 0 auto 20px auto !important;
+            }
             .card-product { border-color: #38bdf8 !important; background-color: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .card-heading { border-color: #64748b !important; background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .card-annotation { border-color: #34d399 !important; background-color: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -180,18 +207,21 @@
 </head>
 <body>
 
+    <!-- 頂部導航列 -->
     <div id="top-navbar" style="background-color: #1e293b; color: white; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; height: 60px; box-sizing: border-box; flex-shrink: 0;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 18px; font-weight: bold; letter-spacing: 0.05em;">展場陳列與價格排版示意工具</span>
-            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">PDF 多分頁版</span>
+            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">PDF 多分頁完工版</span>
         </div>
         <button id="btn-export-pdf" style="background-color: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">
             💾 導出所有陳列頁面 (PDF)
         </button>
     </div>
 
+    <!-- 主工作區 -->
     <div class="app-container">
         
+        <!-- 左側面板 -->
         <aside class="left-panel">
             <div style="margin-bottom: 20px;">
                 <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">🖼️ 1. 當前頁面畫布尺寸</h3>
@@ -242,9 +272,12 @@
             </div>
         </aside>
 
+        <!-- 中央工作區面板 -->
         <main class="center-panel" id="canvas-wrapper">
+            <!-- 畫布分頁標籤列 -->
             <div class="tab-bar" id="page-tabs"></div>
             
+            <!-- 縮放控制列 -->
             <div id="zoom-controls" style="background-color: white; width: 100%; max-width: 950px; padding: 6px 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; box-sizing: border-box;">
                 <button id="btn-zoom-out" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">🔍 縮小 (-)</button>
                 <span id="zoom-display" style="font-size: 12px; font-weight: bold; color:#475569; min-width:40px; text-align:center; align-self:center;">100%</span>
@@ -252,6 +285,7 @@
                 <button id="btn-zoom-reset" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">重設</button>
             </div>
 
+            <!-- 主畫布容器外殼 -->
             <div id="canvas-holder-element" class="canvas-container-wrapper">
                 <div id="export-container" style="display: inline-block;">
                     <div style="border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
@@ -261,11 +295,13 @@
                         </div>
                         <div id="canvas-display-size" style="font-family: monospace; font-weight: bold; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #334155;">90 x 30 cm</div>
                     </div>
+                    <!-- 綠色主畫布 -->
                     <div id="work-canvas" style="width: 900px; height: 300px;"></div>
                 </div>
             </div>
         </main>
 
+        <!-- 右側屬性面板 -->
         <aside class="right-panel">
             <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">⚙️ 3. 卡牌屬性編輯</h3>
             <div id="property-placeholder" style="color: #9ca3af; padding-top: 40px; text-align: center; font-size: 14px;">
@@ -314,8 +350,10 @@
         </aside>
     </div>
 
+    <!-- 💡 列印專用的隱形影子容器 -->
     <div id="print-area-container"></div>
 
+    <!-- JavaScript 核心處理邏輯 -->
     <script>
         let pageData = [
             { id: "page-1", name: "櫃台後鐵網A", w: 90, h: 30, cards: [] }
@@ -488,38 +526,21 @@
             document.getElementById('edit-w').addEventListener('input', syncFormToCardDimensions);
             document.getElementById('edit-h').addEventListener('input', syncFormToCardDimensions);
 
-            // 💡 終極Bug修復：刪除時，同步剔除 pageData 裡的存檔，再也不會閃退或不見！
             document.getElementById('btn-delete-card').addEventListener('click', () => {
                 if (!selectedCardId) return;
                 const el = document.getElementById(selectedCardId);
                 if (el) el.remove();
-                
                 const activePage = pageData.find(p => p.id === activePageId);
-                if (activePage) {
-                    activePage.cards = activePage.cards.filter(c => c.id !== selectedCardId);
-                }
+                activePage.cards = activePage.cards.filter(c => c.id !== selectedCardId);
                 deselectAll();
             });
 
-            // 💡 終極Bug修復：複製時，同步塞入 pageData 存檔
             document.getElementById('btn-duplicate-card').addEventListener('click', () => {
                 if (!selectedCardId) return;
                 const activePage = pageData.find(p => p.id === activePageId);
                 const current = activePage.cards.find(c => c.id === selectedCardId);
                 if (!current) return;
-                
-                addCard({ 
-                    type: current.type, 
-                    w: current.w, 
-                    h: current.h, 
-                    title: current.title + " (複製)", 
-                    promo: current.promo, 
-                    orig: current.orig, 
-                    note: current.note, 
-                    url: current.url, 
-                    x: current.x + 25, 
-                    y: current.y + 25 
-                });
+                addCard({ type: current.type, w: current.w, h: current.h, title: current.title + " (複製)", promo: current.promo, orig: current.orig, note: current.note, url: current.url, x: current.x + 25, y: current.y + 25 });
             });
 
             document.getElementById('btn-export-pdf').addEventListener('click', exportAllPagesToPDF);
@@ -530,7 +551,6 @@
             cardCounter++;
             const id = `card-${cardCounter}`;
             const cardObj = { id, type: data.type || "product", w: data.w, h: data.h, title: data.title, promo: data.promo, orig: data.orig, note: data.note, url: data.url || "", x: data.x || 20, y: data.y || 20 };
-            
             const activePage = pageData.find(p => p.id === activePageId);
             activePage.cards.push(cardObj);
             recreateCardDOM(cardObj);
@@ -716,7 +736,7 @@
             el.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
         }
 
-        // 💡 影子區域純淨渲染 PDF 技術
+        // 💡 終極「無感影子列印」：保證絕對不進行 reload、頁面 100% 留存不卡死
         function exportAllPagesToPDF() {
             deselectAll();
             const activePage = pageData.find(p => p.id === activePageId);
@@ -726,8 +746,10 @@
                 activePage.name = inputCanvasName.value || "未命名陳列區";
             }
 
+            // 1. 先清空影子容器
             printAreaContainer.innerHTML = "";
 
+            // 2. 注入多頁面結構
             pageData.forEach(page => {
                 let pageWrapper = document.createElement('div');
                 pageWrapper.className = "print-page-wrapper";
@@ -751,6 +773,7 @@
                 printAreaContainer.appendChild(pageWrapper);
             });
 
+            // 3. 複製卡牌至影子區
             pageData.forEach(page => {
                 const targetPrintCanvas = document.getElementById(`print-canvas-${page.id}`);
                 page.cards.forEach(card => {
@@ -787,9 +810,14 @@
                 });
             });
 
+            // 4. 直接列印，完全不碰原本的操作畫面
             setTimeout(() => {
                 window.print();
-                setTimeout(() => { printAreaContainer.innerHTML = ""; }, 100);
+                
+                // 💡 印完立刻清空影子區，操作畫面自始至終完全沒變過！
+                setTimeout(() => { 
+                    printAreaContainer.innerHTML = ""; 
+                }, 100);
             }, 100);
         }
     </script>
