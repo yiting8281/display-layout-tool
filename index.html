@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - 真正完工版</title>
+    <title>展場陳列與價格排版示意工具 - 記憶存檔版</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -184,7 +184,7 @@
                 break-after: page;
                 display: block !important;
                 box-sizing: border-box;
-                padding-top: 40px; /* 💡 預留頂部空間，防止跨到鐵網上方的標題卡在紙張邊緣切到 */
+                padding-top: 40px;
             }
             .print-page-wrapper:last-child {
                 page-break-after: avoid !important;
@@ -198,7 +198,6 @@
                 display: block !important;
                 margin: 0 auto 20px auto !important;
             }
-            /* 💡 確保列印時影子鐵網同樣允許溢出顯示 */
             .print-page-wrapper [id^="print-canvas-"] {
                 overflow: visible !important;
             }
@@ -213,11 +212,16 @@
     <div id="top-navbar" style="background-color: #1e293b; color: white; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; height: 60px; box-sizing: border-box; flex-shrink: 0;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 18px; font-weight: bold; letter-spacing: 0.05em;">展場陳列與價格排版示意工具</span>
-            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">終極同步解放版</span>
+            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">自動存檔版</span>
         </div>
-        <button id="btn-export-pdf" style="background-color: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">
-            💾 導出所有陳列頁面 (PDF)
-        </button>
+        <div style="display: flex; gap: 10px;">
+            <button id="btn-clear-storage" style="background-color: #ef4444; color: white; padding: 8px 14px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                🗑️ 清空重置所有資料
+            </button>
+            <button id="btn-export-pdf" style="background-color: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">
+                💾 導出所有陳列頁面 (PDF)
+            </button>
+        </div>
     </div>
 
     <div class="app-container">
@@ -226,12 +230,7 @@
                 <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">🖼️ 1. 當前頁面畫布尺寸</h3>
                 <div class="input-group">
                     <label>選擇常用尺寸</label>
-                    <select id="select-canvas-preset" class="input-control">
-                        <option value="90x30">櫃位後鐵網 A (90 x 30 cm)</option>
-                        <option value="120x60">大型陳列架 B (120 x 60 cm)</option>
-                        <option value="60x40">中型展示櫃 C (60 x 40 cm)</option>
-                        <option value="100x100">正方形展板 D (100 x 100 cm)</option>
-                    </select>
+                    <select id="select-canvas-preset" class="input-control"></select>
                 </div>
                 <div style="display: flex; gap: 8px;" class="input-group">
                     <div style="flex: 1;">
@@ -346,11 +345,28 @@
     <div id="print-area-container"></div>
 
     <script>
-        let pageData = [
+        // 💾 從 LocalStorage 載入資料，如果完全沒有資料則初始化預設分頁
+        let pageData = JSON.parse(localStorage.getItem('exhibition_page_data')) || [
             { id: "page-1", name: "櫃台後鐵網A", w: 90, h: 30, cards: [] }
         ];
-        let activePageId = "page-1";
+        let activePageId = localStorage.getItem('exhibition_active_page_id') || pageData[0].id;
+        
+        // 確保 activePageId 存在於目前的 pageData 中，避免刪除分頁產生的極端錯誤
+        if(!pageData.some(p => p.id === activePageId)) {
+            activePageId = pageData[0].id;
+        }
+
+        // 計算目前的 cardCounter 最大值以防止 ID 重複
         let cardCounter = 0;
+        pageData.forEach(p => {
+            p.cards.forEach(c => {
+                const numericId = parseInt(c.id.replace('card-', ''));
+                if(!isNaN(numericId) && numericId > cardCounter) {
+                    cardCounter = numericId;
+                }
+            });
+        });
+
         let currentZoom = 100;
         const SCALE = 10;
         let selectedCardId = null;
@@ -377,6 +393,12 @@
             setupEventListeners();
             setupZoomListeners();
         });
+
+        // 📝 核心自動儲存函數
+        function saveToLocalStorage() {
+            localStorage.setItem('exhibition_page_data', JSON.stringify(pageData));
+            localStorage.setItem('exhibition_active_page_id', activePageId);
+        }
 
         function loadPresetsToDropdown() {
             selectCanvasPreset.innerHTML = `
@@ -428,12 +450,14 @@
             updateCanvasSize();
             renderTabs();
             targetPage.cards.forEach(cardData => recreateCardDOM(cardData));
+            saveToLocalStorage(); // 同步當前所在頁面
         }
 
         document.getElementById('btn-add-new-page').addEventListener('click', () => {
             const newId = `page-${Date.now()}`;
             pageData.push({ id: newId, name: `新陳列區-${pageData.length + 1}`, w: 90, h: 30, cards: [] });
             switchPage(newId);
+            saveToLocalStorage();
         });
 
         function deletePage(pageId) {
@@ -442,6 +466,7 @@
                 pageData = pageData.filter(p => p.id !== pageId);
                 if (activePageId === pageId) { activePageId = pageData[pageData.length - 1].id; }
                 switchPage(activePageId);
+                saveToLocalStorage();
             }
         }
 
@@ -457,6 +482,7 @@
             if (activePage) { activePage.w = w; activePage.h = h; activePage.name = name; }
             const activeTab = document.querySelector('.tab-button.active span');
             if(activeTab) activeTab.textContent = name;
+            saveToLocalStorage();
         }
 
         function setupZoomListeners() {
@@ -524,6 +550,7 @@
                 const activePage = pageData.find(p => p.id === activePageId);
                 activePage.cards = activePage.cards.filter(c => c.id !== selectedCardId);
                 deselectAll();
+                saveToLocalStorage();
             });
 
             document.getElementById('btn-duplicate-card').addEventListener('click', () => {
@@ -532,6 +559,15 @@
                 const current = activePage.cards.find(c => c.id === selectedCardId);
                 if (!current) return;
                 addCard({ type: current.type, w: current.w, h: current.h, title: current.title + " (複製)", promo: current.promo, orig: current.orig, note: current.note, url: current.url, x: current.x + 25, y: current.y + 25 });
+            });
+
+            // ⚠️ 重置清空按鈕事件
+            document.getElementById('btn-clear-storage').addEventListener('click', () => {
+                if (confirm("確定要重置並清空所有排版分頁嗎？所有資料都將消失！")) {
+                    localStorage.removeItem('exhibition_page_data');
+                    localStorage.removeItem('exhibition_active_page_id');
+                    location.reload();
+                }
             });
 
             document.getElementById('btn-export-pdf').addEventListener('click', exportAllPagesToPDF);
@@ -545,6 +581,7 @@
             const activePage = pageData.find(p => p.id === activePageId);
             activePage.cards.push(cardObj);
             recreateCardDOM(cardObj);
+            saveToLocalStorage();
         }
 
         function recreateCardDOM(cardObj) {
@@ -636,6 +673,7 @@
                     isDragging = false; isResizing = false;
                     document.removeEventListener('mousemove', moveHandler);
                     document.removeEventListener('mouseup', upHandler);
+                    saveToLocalStorage(); // 拖曳放開或縮放放開時自動儲存座標
                 };
                 document.addEventListener('mousemove', moveHandler);
                 document.addEventListener('mouseup', upHandler);
@@ -717,6 +755,7 @@
                 if (promoDiv) promoDiv.textContent = `$${cardObj.promo}`;
                 if (noteDiv) noteDiv.innerHTML = cardObj.note || '&nbsp;';
             }
+            saveToLocalStorage(); // 輸入文字時自動即時儲存
         }
 
         function syncFormToCardDimensions() {
@@ -735,6 +774,7 @@
             el.style.height = `${cardObj.h * SCALE}px`;
             const dimDiv = el.querySelector('.card-ui-dim');
             if (dimDiv) dimDiv.textContent = `${cardObj.w}x${cardObj.h}`;
+            saveToLocalStorage(); // 修改手動尺寸時自動儲存
         }
 
         function exportAllPagesToPDF() {
@@ -745,6 +785,7 @@
                 activePage.h = parseInt(inputCanvasH.value) || 30;
                 activePage.name = inputCanvasName.value || "未命名陳列區";
             }
+            saveToLocalStorage();
 
             printAreaContainer.innerHTML = "";
 
@@ -774,7 +815,6 @@
             pageData.forEach(page => {
                 const targetPrintCanvas = document.getElementById(`print-canvas-${page.id}`);
                 page.cards.forEach(card => {
-                    // 💡【終極修復】：徹底拔除位置過濾限制，無論卡牌有沒有超出框外（負座標），一律塞入 PDF 印出來！
                     const cDiv = document.createElement('div');
                     let typeClass = "card-product";
                     if (card.type === "heading") typeClass = "card-heading";
