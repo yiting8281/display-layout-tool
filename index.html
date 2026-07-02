@@ -246,7 +246,7 @@
                 </div>
                 <div class="input-group">
                     <label>修改當前頁面名稱</label>
-                    <input type="text" id="input-canvas-name" value="櫃台後鐵網A" class="input-control">
+                    <input type="text" id="input-canvas-name" value="" class="input-control" placeholder="請輸入分頁名稱">
                 </div>
                 <button id="btn-save-canvas-preset" style="width:100%; background-color: #475569; color:white; padding: 8px; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight: bold; margin-bottom:8px;">📌 儲存目前寬高至常用列表</button>
                 <button id="btn-add-new-page" style="width:100%; background-color: #0284c7; color:white; padding: 10px; border:none; border-radius:6px; font-size:13px; cursor:pointer; font-weight: bold;">➕ 新增下一個陳列區(新頁面)</button>
@@ -350,8 +350,8 @@
         let pageData = JSON.parse(localStorage.getItem('exhibition_page_data')) || [
             { id: "page-1", name: "櫃台後鐵網A", w: 90, h: 30, cards: [] }
         ];
+
         let activePageId = localStorage.getItem('exhibition_active_page_id') || pageData[0].id;
-        
         if(!pageData.some(p => p.id === activePageId)) {
             activePageId = pageData[0].id;
         }
@@ -388,7 +388,8 @@
         window.addEventListener('DOMContentLoaded', () => {
             loadPresetsToDropdown();
             renderTabs();
-            switchPage(activePageId);
+            // 💡 初始化載入，加入 true 告訴程式「這是重新整理，不要偷存髒資料」
+            switchPage(activePageId, true);
             setupEventListeners();
             setupZoomListeners();
         });
@@ -432,24 +433,26 @@
             });
         }
 
-        function switchPage(pageId) {
-            // 保存當前頁面資料
-            const activePage = pageData.find(p => p.id === activePageId);
-            if (activePage) {
-                activePage.w = parseInt(inputCanvasW.value) || 90;
-                activePage.h = parseInt(inputCanvasH.value) || 30;
-                activePage.name = inputCanvasName.value || "未命名陳列區";
+        // 💡 關鍵修正點：加入 isInit 判斷
+        function switchPage(pageId, isInit = false) {
+            // 如果不是剛重整網頁，才把當前輸入框資料存回去
+            if (!isInit) {
+                const activePage = pageData.find(p => p.id === activePageId);
+                if (activePage) {
+                    activePage.w = parseInt(inputCanvasW.value) || 90;
+                    activePage.h = parseInt(inputCanvasH.value) || 30;
+                    activePage.name = inputCanvasName.value || "未命名陳列區";
+                }
             }
             
-            // 切換
             activePageId = pageId;
             const targetPage = pageData.find(p => p.id === pageId);
             
+            // 正確載入目標頁面的名字與尺寸
             inputCanvasW.value = targetPage.w;
             inputCanvasH.value = targetPage.h;
             inputCanvasName.value = targetPage.name;
             
-            // 重置選單成未選狀態，防止它去干擾
             selectCanvasPreset.selectedIndex = 0;
             
             workCanvas.innerHTML = "";
@@ -526,20 +529,18 @@
             inputCanvasH.addEventListener('input', updateCanvasSize);
             inputCanvasName.addEventListener('input', updateCanvasSize);
 
-            // 🔥 關鍵修正點：選擇常用範本時，只改寬高，絕對不要去改使用者的頁面名稱！
             selectCanvasPreset.addEventListener('change', (e) => {
                 if(!e.target.value) return;
                 const [w, h] = e.target.value.split('x');
                 inputCanvasW.value = w;
                 inputCanvasH.value = h;
-                // 註銷原本會覆蓋名字的程式碼
                 updateCanvasSize();
             });
 
             document.getElementById('btn-save-canvas-preset').addEventListener('click', () => {
                 const w = parseInt(inputCanvasW.value);
                 const h = parseInt(inputCanvasH.value);
-                const name = prompt("請輸入此自訂尺寸的有名模板名稱（例如：入口大展板）：");
+                const name = prompt("請輸入此自訂尺寸的範本名稱：");
                 if(!name || !name.trim()) return;
                 customPresets.push({ name: name.trim(), w, h });
                 localStorage.setItem('custom_canvas_presets', JSON.stringify(customPresets));
@@ -834,6 +835,7 @@
                     <div id="print-canvas-${page.id}" style="position: relative; border: 4px solid #10b981; background-color: #ffffff; width: ${page.w * SCALE}px; height: ${page.h * SCALE}px;"></div>
                 `;
                 wrapper.appendChild(innerContainer);
+                pageWrapper.appendChild(wrapper);
                 pageWrapper.appendChild(wrapper);
                 printAreaContainer.appendChild(pageWrapper);
             });
