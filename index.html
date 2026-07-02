@@ -379,8 +379,9 @@
     <div id="print-area-container"></div>
 
     <script>
+        // 💾 讀取暫存資料，預設也賦予第一頁 zoom 記憶
         let pageData = JSON.parse(localStorage.getItem('exhibition_page_data')) || [
-            { id: "page-1", name: "櫃台後鐵網A", w: 90, h: 30, cards: [] }
+            { id: "page-1", name: "櫃台後鐵網A", w: 90, h: 30, cards: [], zoom: 100 }
         ];
 
         let activePageId = localStorage.getItem('exhibition_active_page_id') || pageData[0].id;
@@ -398,7 +399,7 @@
             });
         });
 
-        let currentZoom = 100;
+        let currentZoom = 100; // 每個分頁自己的比例尺快取
         const SCALE = 10;
         let selectedCardId = null;
         let customPresets = JSON.parse(localStorage.getItem('custom_canvas_presets')) || [];
@@ -471,6 +472,7 @@
                     activePage.w = parseInt(inputCanvasW.value) || 90;
                     activePage.h = parseInt(inputCanvasH.value) || 30;
                     activePage.name = inputCanvasName.value || "未命名陳列區";
+                    activePage.zoom = currentZoom; // 💡 切換前，紀錄舊分頁最終縮放比
                 }
             }
             
@@ -481,11 +483,15 @@
             inputCanvasH.value = targetPage.h;
             inputCanvasName.value = targetPage.name;
             
+            // 💡 讀取目標分頁獨立的 zoom 值，若舊資料沒有則給予預設 100
+            currentZoom = targetPage.zoom || 100; 
+            
             selectCanvasPreset.selectedIndex = 0;
             
             workCanvas.innerHTML = "";
             deselectAll();
             updateCanvasSizeUI(); 
+            applyZoom(); // 💡 強制更新當前分頁的獨立縮放比例畫面
             renderTabs();
             targetPage.cards.forEach(cardData => recreateCardDOM(cardData));
             saveToLocalStorage(); 
@@ -493,29 +499,22 @@
 
         document.getElementById('btn-add-new-page').addEventListener('click', () => {
             const newId = `page-${Date.now()}`;
-            pageData.push({ id: newId, name: `新陳列區-${pageData.length + 1}`, w: 90, h: 30, cards: [] });
+            pageData.push({ id: newId, name: `新陳列區-${pageData.length + 1}`, w: 90, h: 30, cards: [], zoom: 100 }); // 💡 預設 100% zoom
             switchPage(newId);
             saveToLocalStorage();
         });
 
-        // 🛠️ 關鍵修正：修復 deletePage 的時序污染 Bug
         function deletePage(pageId) {
             if (pageData.length <= 1) return;
             if (confirm("確定要刪除這張陳列圖頁面嗎？")) {
-                // 1. 如果被刪除的是「當前正在看的這一頁」，我們必須先乾淨地決定好下一個落腳的頁面 ID
                 let nextActiveId = activePageId;
                 if (activePageId === pageId) {
                     const remainingPages = pageData.filter(p => p.id !== pageId);
                     nextActiveId = remainingPages[remainingPages.length - 1].id;
                 }
 
-                // 2. 執行刪除過濾
                 pageData = pageData.filter(p => p.id !== pageId);
-                
-                // 3. 關鍵一步：直接強制切換到下一頁，並帶入 true 隔離標記，防堵輸入框舊資料回填！
-                switchPage(nextActiveId, true);
-                
-                // 4. 同步儲存
+                switchPage(nextActiveId, true); // 隔離切換，阻斷回存
                 saveToLocalStorage();
             }
         }
@@ -553,10 +552,32 @@
             canvasDisplaySize.textContent = `${w} x ${h} cm`;
         }
 
+        // 💡 改造縮放監聽器，除了執行畫面，也即時同步回個別分頁物件中
         function setupZoomListeners() {
-            document.getElementById('btn-zoom-in').addEventListener('click', () => { currentZoom = Math.min(150, currentZoom + 10); applyZoom(); });
-            document.getElementById('btn-zoom-out').addEventListener('click', () => { currentZoom = Math.max(30, currentZoom - 10); applyZoom(); });
-            document.getElementById('btn-zoom-reset').addEventListener('click', () => { currentZoom = 100; applyZoom(); });
+            document.getElementById('btn-zoom-in').addEventListener('click', () => { 
+                currentZoom = Math.min(150, currentZoom + 10); 
+                saveCurrentPageZoom();
+                applyZoom(); 
+            });
+            document.getElementById('btn-zoom-out').addEventListener('click', () => { 
+                currentZoom = Math.max(30, currentZoom - 10); 
+                saveCurrentPageZoom();
+                applyZoom(); 
+            });
+            document.getElementById('btn-zoom-reset').addEventListener('click', () => { 
+                currentZoom = 100; 
+                saveCurrentPageZoom();
+                applyZoom(); 
+            });
+        }
+
+        // 💡 即時將目前縮放百分比同步寫回資料庫的輔助函式
+        function saveCurrentPageZoom() {
+            const activePage = pageData.find(p => p.id === activePageId);
+            if (activePage) {
+                activePage.zoom = currentZoom;
+                localStorage.setItem('exhibition_page_data', JSON.stringify(pageData));
+            }
         }
 
         function applyZoom() {
