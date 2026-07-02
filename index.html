@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - 點擊生成版</title>
+    <title>展場陳列與價格排版示意工具 - 終極保證版</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
     <style>
@@ -17,7 +17,7 @@
             box-sizing: border-box;
         }
         .card-element.selected {
-            outline: 2px solid #2563eb;
+            outline: 2px solid #2563eb !important;
             box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
         }
         .canvas-bg {
@@ -118,4 +118,26 @@
                         <input type="number" id="custom-card-h" placeholder="高 cm" class="w-full bg-gray-50 border border-gray-300 rounded p-1 text-xs text-center">
                     </div>
                     <input type="text" id="custom-card-title" placeholder="商品預設名稱" class="w-full bg-gray-50 border border-gray-300 rounded p-1 text-xs mb-2">
-                    <button id="btn-add-
+                    <button id="btn-add-custom-card" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 rounded font-medium transition cursor-pointer">
+                        生成並放入畫布
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 bg-gray-100 p-8 flex justify-center items-center overflow-auto canvas-bg" id="canvas-wrapper">
+            <div id="export-container" class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 flex flex-col space-y-4">
+                <div class="border-b-2 border-gray-800 pb-2 flex justify-between items-end">
+                    <div>
+                        <h2 id="canvas-display-name" class="text-lg font-bold text-gray-800">櫃台後鐵網 A</h2>
+                        <p class="text-xs text-gray-500">比例尺提示：10 像素(px) = 1 公分(cm)</p>
+                    </div>
+                    <div class="text-right">
+                        <span id="canvas-display-size" class="text-sm font-mono font-bold bg-slate-100 text-slate-700 px-2 py-1 rounded">90 x 30 cm</span>
+                    </div>
+                </div>
+                <div id="work-canvas" class="relative border-4 border-emerald-500 bg-emerald-50/20 shadow-inner overflow-hidden" style="width: 900px; height: 300px; min-width: 100px; min-height: 100px;"></div>
+            </div>
+        </main>
+
+        <aside class="w-80 bg-white border-l border-gray-200 p-4
