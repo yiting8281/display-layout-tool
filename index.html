@@ -3,29 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具</title>
+    <title>展場陳列與價格排版示意工具 - 終極保證版</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #f3f4f6;
         }
         .card-element {
-            touch-action: none;
             user-select: none;
             position: absolute;
             box-sizing: border-box;
         }
         .card-element.selected {
-            outline: 2px solid #2563eb;
+            outline: 2px solid #2563eb !important;
             box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
         }
         .canvas-bg {
             background-size: 20px 20px;
             background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px),
                               linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+        }
+        .resize-handle {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background-color: #2563eb;
+            bottom: 0;
+            right: 0;
+            cursor: se-resize;
+            border-top-left-radius: 4px;
         }
     </style>
 </head>
@@ -34,10 +42,10 @@
     <header class="bg-slate-800 text-white px-6 py-3 flex justify-between items-center shadow-md shrink-0">
         <div class="flex items-center space-x-3">
             <span class="text-xl font-bold tracking-wider">展場陳列與價格排版示意工具</span>
-            <span class="text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-full">美工示意圖專用</span>
+            <span class="text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full">PPTX 超連結版</span>
         </div>
-        <button id="btn-export" class="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium shadow flex items-center space-x-2 transition cursor-pointer">
-            <span>💾 導出示意圖 (PNG)</span>
+        <button id="btn-export-ppt" class="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium shadow flex items-center space-x-2 transition cursor-pointer">
+            <span>💾 導出陳列簡報 (PPTX)</span>
         </button>
     </header>
 
@@ -78,32 +86,29 @@
 
             <div>
                 <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wider mb-3 pb-1 border-b border-gray-100">
-                    🏷️ 2. 新增卡牌（商品字卡）
+                    🏷️ 2. 新增卡牌（請直接點擊按鈕）
                 </h3>
                 <div class="space-y-2">
-                    <button class="btn-add-card w-full text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 p-2.5 rounded-lg text-xs font-medium transition flex justify-between items-center cursor-pointer" 
-                            data-w="15" data-h="20" data-title="Race Belt 號碼帶" data-promo="420" data-orig="500" data-note="展場價">
+                    <button id="btn-add-large" class="w-full text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 p-2.5 rounded-lg text-xs font-medium transition flex justify-between items-center cursor-pointer">
                         <div>
-                            <span class="font-bold block">📄 號碼帶卡牌 (大)</span>
+                            <span class="font-bold block">📄 點擊新增：號碼帶卡牌 (大)</span>
                             <span class="text-gray-500 font-normal">預設尺寸：15 x 20 cm</span>
                         </div>
-                        <span class="bg-blue-200 px-1.5 py-0.5 rounded text-[10px]">新增</span>
+                        <span class="bg-blue-200 px-1.5 py-0.5 rounded text-[10px]">添加</span>
                     </button>
-                    <button class="btn-add-card w-full text-left bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 p-2.5 rounded-lg text-xs font-medium transition flex justify-between items-center cursor-pointer" 
-                            data-w="12" data-h="12" data-title="UNIQ 手腕帶" data-promo="380" data-orig="450" data-note="展場價">
+                    <button id="btn-add-medium" class="w-full text-left bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 p-2.5 rounded-lg text-xs font-medium transition flex justify-between items-center cursor-pointer">
                         <div>
-                            <span class="font-bold block">⏹️ 手腕/頭帶卡牌 (中)</span>
+                            <span class="font-bold block">⏹️ 點擊新增：手腕/頭帶卡牌 (中)</span>
                             <span class="text-gray-500 font-normal">預設尺寸：12 x 12 cm</span>
                         </div>
-                        <span class="bg-amber-200 px-1.5 py-0.5 rounded text-[10px]">新增</span>
+                        <span class="bg-amber-200 px-1.5 py-0.5 rounded text-[10px]">添加</span>
                     </button>
-                    <button class="btn-add-card w-full text-left bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 p-2.5 rounded-lg text-xs font-medium transition flex justify-between items-center cursor-pointer" 
-                            data-w="20" data-h="10" data-title="Thin On/Off.3 透氣頭帶" data-promo="550" data-orig="650" data-note="展場價">
+                    <button id="btn-add-horizontal" class="w-full text-left bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 p-2.5 rounded-lg text-xs font-medium transition flex justify-between items-center cursor-pointer">
                         <div>
-                            <span class="font-bold block">➖ 寬型商品卡牌 (橫)</span>
+                            <span class="font-bold block">➖ 點擊新增：寬型商品卡牌 (橫)</span>
                             <span class="text-gray-500 font-normal">預設尺寸：20 x 10 cm</span>
                         </div>
-                        <span class="bg-purple-200 px-1.5 py-0.5 rounded text-[10px]">新增</span>
+                        <span class="bg-purple-200 px-1.5 py-0.5 rounded text-[10px]">添加</span>
                     </button>
                 </div>
                 <div class="mt-4 pt-4 border-t border-dashed border-gray-200">
@@ -120,7 +125,7 @@
             </div>
         </aside>
 
-        <main class="flex-1 bg-gray-100 p-8 flex justify-center items-center overflow-auto canvas-bg">
+        <main class="flex-1 bg-gray-100 p-8 flex justify-center items-center overflow-auto canvas-bg" id="canvas-wrapper">
             <div id="export-container" class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 flex flex-col space-y-4">
                 <div class="border-b-2 border-gray-800 pb-2 flex justify-between items-end">
                     <div>
@@ -131,7 +136,7 @@
                         <span id="canvas-display-size" class="text-sm font-mono font-bold bg-slate-100 text-slate-700 px-2 py-1 rounded">90 x 30 cm</span>
                     </div>
                 </div>
-                <div id="work-canvas" class="relative border-4 border-emerald-500 bg-emerald-50/20 shadow-inner overflow-hidden" style="width: 900px; height: 300px;"></div>
+                <div id="work-canvas" class="relative border-4 border-emerald-500 bg-emerald-50/20 shadow-inner overflow-hidden" style="width: 900px; height: 300px; min-width: 100px; min-height: 100px;"></div>
             </div>
         </main>
 
@@ -171,6 +176,10 @@
                         </div>
                     </div>
                     <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">商品連結網址 (選填)</label>
+                        <input type="url" id="edit-url" placeholder="https://example.com" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-xs font-mono text-blue-600">
+                    </div>
+                    <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1">備註/規格說明</label>
                         <input type="text" id="edit-note" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-xs">
                     </div>
@@ -200,12 +209,11 @@
         const propertyPlaceholder = document.getElementById('property-placeholder');
         const propertyForm = document.getElementById('property-form');
 
-        function init() {
+        window.addEventListener('DOMContentLoaded', () => {
             loadPresetsToDropdown();
             updateCanvasSize();
             setupEventListeners();
-            setupInteractJS();
-        }
+        });
 
         function loadPresetsToDropdown() {
             selectCanvasPreset.innerHTML = `
@@ -226,6 +234,7 @@
             const w = parseInt(inputCanvasW.value) || 90;
             const h = parseInt(inputCanvasH.value) || 30;
             const name = inputCanvasName.value || "未命名陳列區";
+            
             workCanvas.style.width = `${w * SCALE}px`;
             workCanvas.style.height = `${h * SCALE}px`;
             canvasDisplayName.textContent = name;
@@ -259,36 +268,37 @@
                 alert(`已儲存常用尺寸：「${name}」`);
             });
 
-            document.querySelectorAll('.btn-add-card').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    addCard({
-                        w: parseInt(btn.dataset.w),
-                        h: parseInt(btn.dataset.h),
-                        title: btn.dataset.title,
-                        promo: btn.dataset.promo,
-                        orig: btn.dataset.orig,
-                        note: btn.dataset.note
-                    });
-                });
+            // 點擊事件完全正常，直接觸發添加
+            document.getElementById('btn-add-large').addEventListener('click', () => {
+                addCard({ w: 15, h: 20, title: "Race Belt 號碼帶", promo: "420", orig: "500", note: "展場價", url: "https://www.compressport.com" });
+            });
+            document.getElementById('btn-add-medium').addEventListener('click', () => {
+                addCard({ w: 12, h: 12, title: "UNIQ 手腕帶", promo: "380", orig: "450", note: "展場價", url: "" });
+            });
+            document.getElementById('btn-add-horizontal').addEventListener('click', () => {
+                addCard({ w: 20, h: 10, title: "Thin On/Off.3 透氣頭帶", promo: "550", orig: "650", note: "展場價", url: "" });
             });
 
             document.getElementById('btn-add-custom-card').addEventListener('click', () => {
                 const w = parseInt(document.getElementById('custom-card-w').value) || 10;
                 const h = parseInt(document.getElementById('custom-card-h').value) || 10;
                 const title = document.getElementById('custom-card-title').value.trim() || "自訂商品卡";
-                addCard({ w, h, title, promo: "0", orig: "0", note: "" });
+                addCard({ w, h, title, promo: "0", orig: "0", note: "", url: "" });
             });
 
             document.getElementById('edit-title').addEventListener('input', syncFormToCard);
             document.getElementById('edit-promo').addEventListener('input', syncFormToCard);
             document.getElementById('edit-orig').addEventListener('input', syncFormToCard);
             document.getElementById('edit-note').addEventListener('input', syncFormToCard);
+            document.getElementById('edit-url').addEventListener('input', syncFormToCard);
+            
             document.getElementById('edit-w').addEventListener('input', syncFormToCardDimensions);
             document.getElementById('edit-h').addEventListener('input', syncFormToCardDimensions);
 
             document.getElementById('btn-delete-card').addEventListener('click', () => {
                 if (!selectedCardId) return;
-                document.getElementById(selectedCardId).remove();
+                const el = document.getElementById(selectedCardId);
+                if (el) el.remove();
                 cards = cards.filter(c => c.id !== selectedCardId);
                 deselectAll();
             });
@@ -299,65 +309,129 @@
                 if (!current) return;
                 addCard({
                     w: current.w, h: current.h, title: current.title + " (複製)",
-                    promo: current.promo, orig: current.orig, note: current.note,
-                    x: current.x + 20, y: current.y + 20
+                    promo: current.promo, orig: current.orig, note: current.note, url: current.url,
+                    x: current.x + 25, y: current.y + 25
                 });
             });
 
-            document.getElementById('btn-export').addEventListener('click', () => {
-                deselectAll();
-                setTimeout(() => {
-                    html2canvas(document.getElementById('export-container'), { scale: 2, useCORS: true }).then(canvas => {
-                        const link = document.createElement('a');
-                        link.download = `${inputCanvasName.value || '陳列示意圖'}.png`;
-                        link.href = canvas.toDataURL('image/png');
-                        link.click();
-                    });
-                }, 100);
-            });
-
+            document.getElementById('btn-export-ppt').addEventListener('click', exportToPPTX);
             workCanvas.addEventListener('click', (e) => { if (e.target === workCanvas) deselectAll(); });
         }
 
         function addCard(data) {
             cardCounter++;
             const id = `card-${cardCounter}`;
+            
             const cardObj = {
-                id: id, w: data.w, h: data.h, title: data.title, promo: data.promo, orig: data.orig, note: data.note,
-                x: data.x !== undefined ? data.x : 10, y: data.y !== undefined ? data.y : 10
+                id: id, w: data.w, h: data.h, title: data.title, promo: data.promo, orig: data.orig, note: data.note, url: data.url || "",
+                x: data.x !== undefined ? data.x : 20, y: data.y !== undefined ? data.y : 20
             };
             cards.push(cardObj);
 
             const div = document.createElement('div');
             div.id = id;
-            div.className = "card-element bg-sky-50 border-2 border-sky-400 text-sky-950 p-2 rounded-md flex flex-col justify-between overflow-hidden cursor-move shadow-sm";
+            div.className = "card-element bg-sky-50 border-2 border-sky-400 text-sky-950 p-2 rounded-md flex flex-col justify-between overflow-hidden shadow-sm";
             div.style.width = `${cardObj.w * SCALE}px`;
             div.style.height = `${cardObj.h * SCALE}px`;
-            div.style.transform = `translate(${cardObj.x}px, ${cardObj.y}px)`;
-            div.setAttribute('data-x', cardObj.x);
-            div.setAttribute('data-y', cardObj.y);
+            div.style.left = `${cardObj.x}px`;
+            div.style.top = `${cardObj.y}px`;
 
             div.innerHTML = `
-                <div class="w-full flex flex-col h-full pointer-events-none">
+                <div class="w-full flex flex-col h-full pointer-events-none select-none">
                     <div class="font-bold border-b border-sky-300 pb-0.5 text-center text-xs tracking-tight truncate card-ui-title underline decoration-sky-400">${cardObj.title}</div>
                     <div class="flex-1 flex flex-col justify-center items-center py-1">
                         <div class="text-[10px] text-gray-400 line-through card-ui-orig">$${cardObj.orig}</div>
                         <div class="text-sm font-extrabold text-red-600 leading-none card-ui-promo">$${cardObj.promo}</div>
                     </div>
                     <div class="text-[9px] text-sky-700 text-center truncate card-ui-note">${cardObj.note || '&nbsp;'}</div>
-                    <div class="absolute bottom-1 right-1 text-[9px] text-gray-400 font-mono scale-75 card-ui-dim">${cardObj.w}x${cardObj.h}</div>
+                    <div class="absolute bottom-1 left-1 text-[9px] text-gray-400 font-mono scale-75 card-ui-dim">${cardObj.w}x${cardObj.h}</div>
                 </div>
+                <div class="resize-handle"></div>
             `;
 
-            div.addEventListener('click', (e) => { e.stopPropagation(); selectCard(id); });
+            // 純原生滑鼠事件控制：拖曳與縮放
+            let isDragging = false;
+            let isResizing = false;
+            let startX, startY, startLeft, startTop, startWidth, startHeight;
+
+            div.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                selectCard(id);
+
+                if (e.target.classList.contains('resize-handle')) {
+                    isResizing = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startWidth = div.offsetWidth;
+                    startHeight = div.offsetHeight;
+                } else {
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startLeft = div.offsetLeft;
+                    startTop = div.offsetTop;
+                    // 提升目前拖曳圖層
+                    document.querySelectorAll('.card-element').forEach(c => c.style.zIndex = 10);
+                    div.style.zIndex = 50;
+                }
+
+                const handleMouseMove = (moveEvent) => {
+                    if (isDragging) {
+                        let newLeft = startLeft + (moveEvent.clientX - startX);
+                        let newTop = startTop + (moveEvent.clientY - startY);
+                        
+                        // 限制在綠框內
+                        newLeft = Math.max(0, Math.min(newLeft, workCanvas.clientWidth - div.offsetWidth));
+                        newTop = Math.max(0, Math.min(newTop, workCanvas.clientHeight - div.offsetHeight));
+
+                        div.style.left = `${newLeft}px`;
+                        div.style.top = `${newTop}px`;
+                        cardObj.x = newLeft;
+                        cardObj.y = newTop;
+                    } else if (isResizing) {
+                        let newWidth = startWidth + (moveEvent.clientX - startX);
+                        let newHeight = startHeight + (moveEvent.clientY - startY);
+
+                        newWidth = Math.max(40, Math.min(newWidth, workCanvas.clientWidth - div.offsetLeft));
+                        newHeight = Math.max(40, Math.min(newHeight, workCanvas.clientHeight - div.offsetTop));
+
+                        div.style.width = `${newWidth}px`;
+                        div.style.height = `${newHeight}px`;
+
+                        const cmW = Math.round(newWidth / SCALE);
+                        const cmH = Math.round(newHeight / SCALE);
+                        cardObj.w = cmW;
+                        cardObj.h = cmH;
+
+                        div.querySelector('.card-ui-dim').textContent = `${cmW}x${cmH}`;
+                        if (selectedCardId === id) {
+                            document.getElementById('edit-w').value = cmW;
+                            document.getElementById('edit-h').value = cmH;
+                        }
+                    }
+                };
+
+                const handleMouseUp = () => {
+                    isDragging = false;
+                    isResizing = false;
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                };
+
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+            });
+
             workCanvas.appendChild(div);
             selectCard(id);
         }
 
         function selectCard(id) {
-            deselectAll();
+            document.querySelectorAll('.card-element').forEach(el => el.classList.remove('selected'));
             selectedCardId = id;
-            document.getElementById(id).classList.add('selected');
+            const currentEl = document.getElementById(id);
+            if(currentEl) currentEl.classList.add('selected');
+
             const cardObj = cards.find(c => c.id === id);
             if (cardObj) {
                 propertyPlaceholder.classList.add('hidden');
@@ -367,6 +441,7 @@
                 document.getElementById('edit-promo').value = cardObj.promo;
                 document.getElementById('edit-orig').value = cardObj.orig;
                 document.getElementById('edit-note').value = cardObj.note;
+                document.getElementById('edit-url').value = cardObj.url || "";
                 document.getElementById('edit-w').value = cardObj.w;
                 document.getElementById('edit-h').value = cardObj.h;
             }
@@ -389,6 +464,7 @@
             cardObj.promo = document.getElementById('edit-promo').value;
             cardObj.orig = document.getElementById('edit-orig').value;
             cardObj.note = document.getElementById('edit-note').value;
+            cardObj.url = document.getElementById('edit-url').value;
 
             el.querySelector('.card-ui-title').textContent = cardObj.title;
             el.querySelector('.card-ui-orig').textContent = `$${cardObj.orig}`;
@@ -404,58 +480,98 @@
 
             const nw = parseInt(document.getElementById('edit-w').value) || 5;
             const nh = parseInt(document.getElementById('edit-h').value) || 5;
-            cardObj.w = nw;
-            cardObj.h = nh;
+            
+            const maxW = Math.round(workCanvas.clientWidth / SCALE) - Math.round(el.offsetLeft / SCALE);
+            const maxH = Math.round(workCanvas.clientHeight / SCALE) - Math.round(el.offsetTop / SCALE);
+            
+            cardObj.w = Math.min(nw, maxW);
+            cardObj.h = Math.min(nh, maxH);
 
-            el.style.width = `${nw * SCALE}px`;
-            el.style.height = `${nh * SCALE}px`;
-            el.querySelector('.card-ui-dim').textContent = `${nw}x${nh}`;
+            el.style.width = `${cardObj.w * SCALE}px`;
+            el.style.height = `${cardObj.h * SCALE}px`;
+            el.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
         }
 
-        function setupInteractJS() {
-            interact('.card-element')
-                .draggable({
-                    listeners: {
-                        move(event) {
-                            const target = event.target;
-                            const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-                            const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-                            target.style.transform = `translate(${x}px, ${y}px)`;
-                            target.setAttribute('data-x', x);
-                            target.setAttribute('data-y', y);
-                            const cObj = cards.find(c => c.id === target.id);
-                            if (cObj) { cObj.x = x; cObj.y = y; }
-                        }
-                    },
-                    modifiers: [interact.modifiers.restrictRect({ restriction: 'parent', endOnly: false })]
-                })
-                .resizable({
-                    edges: { right: true, bottom: true },
-                    listeners: {
-                        move(event) {
-                            const target = event.target;
-                            target.style.width = `${event.rect.width}px`;
-                            target.style.height = `${event.rect.height}px`;
-                            const cmW = Math.round(event.rect.width / SCALE);
-                            const cmH = Math.round(event.rect.height / SCALE);
-                            const cObj = cards.find(c => c.id === target.id);
-                            if (cObj) {
-                                cObj.w = cmW; cObj.h = cmH;
-                                target.querySelector('.card-ui-dim').textContent = `${cmW}x${cmH}`;
-                                if (selectedCardId === target.id) {
-                                    document.getElementById('edit-w').value = cmW;
-                                    document.getElementById('edit-h').value = cmH;
-                                }
-                            }
-                        }
-                    },
-                    modifiers: [
-                        interact.modifiers.restrictSize({ min: { width: 40, height: 40 } }),
-                        interact.modifiers.restrictRect({ restriction: 'parent' })
-                    ]
+        function exportToPPTX() {
+            deselectAll();
+            let pptx = new PptxGenJS();
+            pptx.layout = 'LAYOUT_169';
+            let slide = pptx.addSlide();
+
+            const canvasW = parseInt(inputCanvasW.value) || 90;
+            const canvasH = parseInt(inputCanvasH.value) || 30;
+            const canvasName = inputCanvasName.value || "陳列示意圖";
+
+            slide.addText(`${canvasName} (${canvasW} x ${canvasH} cm)`, {
+                x: 0.5, y: 0.4, w: 12, h: 0.5, fontSize: 20, bold: true, color: '1E293B', fontFace: 'Arial'
+            });
+            slide.addText("💡 提示：投影片放映模式下，點擊卡牌即可直接開啟指定商品網頁", {
+                x: 0.5, y: 0.9, w: 12, h: 0.3, fontSize: 10, italic: true, color: '64748B', fontFace: 'Arial'
+            });
+
+            let scaleFactor = Math.min(12.0 / canvasW, 4.5 / canvasH);
+            let pCanvasW = canvasW * scaleFactor;
+            let pCanvasH = canvasH * scaleFactor;
+            let pCanvasX = 0.5 + (12.0 - pCanvasW) / 2;
+            let pCanvasY = 1.5 + (4.5 - pCanvasH) / 2;
+
+            slide.addShape(pptx.ShapeType.rectangle, {
+                x: pCanvasX, y: pCanvasY, w: pCanvasW, h: pCanvasH,
+                fill: { color: 'F0FDF4' }, line: { color: '10B981', width: 3 }
+            });
+
+            cards.forEach(card => {
+                let relativeX = card.x / SCALE;
+                let relativeY = card.y / SCALE;
+                let itemX = pCanvasX + (relativeX * scaleFactor);
+                let itemY = pCanvasY + (relativeY * scaleFactor);
+                let itemW = card.w * scaleFactor;
+                let itemH = card.h * scaleFactor;
+
+                let linkConfig = null;
+                if (card.url && card.url.trim().startsWith('http')) {
+                    linkConfig = { url: card.url.trim() };
+                }
+
+                slide.addShape(pptx.ShapeType.roundRect, {
+                    x: itemX, y: itemY, w: itemW, h: itemH,
+                    fill: { color: 'F0F9FF' }, line: { color: '38BDF8', width: 1.5 },
+                    hyperlink: linkConfig
                 });
+
+                slide.addText(card.title, {
+                    x: itemX, y: itemY + (itemH * 0.05), w: itemW, h: itemH * 0.25,
+                    fontSize: Math.max(10, Math.min(14, Math.round(itemH * 2.5))),
+                    bold: true, align: 'center', color: '0369A1', underline: true, fontFace: 'Arial',
+                    hyperlink: linkConfig
+                });
+
+                slide.addText(`$${card.orig}`, {
+                    x: itemX, y: itemY + (itemH * 0.35), w: itemW, h: itemH * 0.15,
+                    fontSize: Math.max(8, Math.min(10, Math.round(itemH * 1.8))),
+                    align: 'center', color: '94A3B8', strike: true, fontFace: 'Arial',
+                    hyperlink: linkConfig
+                });
+
+                slide.addText(`$${card.promo}`, {
+                    x: itemX, y: itemY + (itemH * 0.50), w: itemW, h: itemH * 0.25,
+                    fontSize: Math.max(12, Math.min(18, Math.round(itemH * 3.2))),
+                    bold: true, align: 'center', color: 'DC2626', fontFace: 'Arial',
+                    hyperlink: linkConfig
+                });
+
+                if(card.note) {
+                    slide.addText(card.note, {
+                        x: itemX, y: itemY + (itemH * 0.78), w: itemW, h: itemH * 0.18,
+                        fontSize: Math.max(7, Math.min(9, Math.round(itemH * 1.5))),
+                        align: 'center', color: '0369A1', fontFace: 'Arial',
+                        hyperlink: linkConfig
+                    });
+                }
+            });
+
+            pptx.writeFile({ fileName: `${canvasName}_陳列超連結簡報` });
         }
-        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
