@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - 真正完工版</title>
+    <title>展場陳列與價格排版示意工具 - 終極同步修復版</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -70,7 +70,6 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         }
         
-        /* 卡牌基本樣式 */
         .card-element {
             position: absolute;
             padding: 8px;
@@ -158,7 +157,6 @@
         }
         .tab-close:hover { color: #ef4444; }
 
-        /* 💡 影子列印區基本設定：在普通網頁畫面上完全隱藏，不佔空間、不影響事件 */
         #print-area-container {
             display: none;
             position: absolute;
@@ -166,7 +164,6 @@
             top: -9999px;
         }
 
-        /* 💡 終極修復 PDF 列印樣式：橫向列印，絕無多餘空白頁 */
         @media print {
             @page {
                 size: landscape;
@@ -207,21 +204,17 @@
 </head>
 <body>
 
-    <!-- 頂部導航列 -->
     <div id="top-navbar" style="background-color: #1e293b; color: white; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; height: 60px; box-sizing: border-box; flex-shrink: 0;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 18px; font-weight: bold; letter-spacing: 0.05em;">展場陳列與價格排版示意工具</span>
-            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">PDF 多分頁完工版</span>
+            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">終極資料同步版</span>
         </div>
         <button id="btn-export-pdf" style="background-color: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">
             💾 導出所有陳列頁面 (PDF)
         </button>
     </div>
 
-    <!-- 主工作區 -->
     <div class="app-container">
-        
-        <!-- 左側面板 -->
         <aside class="left-panel">
             <div style="margin-bottom: 20px;">
                 <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">🖼️ 1. 當前頁面畫布尺寸</h3>
@@ -272,12 +265,9 @@
             </div>
         </aside>
 
-        <!-- 中央工作區面板 -->
         <main class="center-panel" id="canvas-wrapper">
-            <!-- 畫布分頁標籤列 -->
             <div class="tab-bar" id="page-tabs"></div>
             
-            <!-- 縮放控制列 -->
             <div id="zoom-controls" style="background-color: white; width: 100%; max-width: 950px; padding: 6px 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; box-sizing: border-box;">
                 <button id="btn-zoom-out" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">🔍 縮小 (-)</button>
                 <span id="zoom-display" style="font-size: 12px; font-weight: bold; color:#475569; min-width:40px; text-align:center; align-self:center;">100%</span>
@@ -285,7 +275,6 @@
                 <button id="btn-zoom-reset" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">重設</button>
             </div>
 
-            <!-- 主畫布容器外殼 -->
             <div id="canvas-holder-element" class="canvas-container-wrapper">
                 <div id="export-container" style="display: inline-block;">
                     <div style="border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
@@ -295,13 +284,11 @@
                         </div>
                         <div id="canvas-display-size" style="font-family: monospace; font-weight: bold; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #334155;">90 x 30 cm</div>
                     </div>
-                    <!-- 綠色主畫布 -->
                     <div id="work-canvas" style="width: 900px; height: 300px;"></div>
                 </div>
             </div>
         </main>
 
-        <!-- 右側屬性面板 -->
         <aside class="right-panel">
             <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">⚙️ 3. 卡牌屬性編輯</h3>
             <div id="property-placeholder" style="color: #9ca3af; padding-top: 40px; text-align: center; font-size: 14px;">
@@ -343,17 +330,15 @@
                     <input type="text" id="edit-note" class="input-control">
                 </div>
                 <div style="display: flex; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                    <button id="btn-delete-card" style="flex:1; background-color: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; padding: 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">🗑️ 刪除</button>
-                    <button id="btn-duplicate-card" style="flex:1; background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">📋 複製</button>
+                    <button id="btn-delete-card" type="button" style="flex:1; background-color: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; padding: 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">🗑️ 刪除</button>
+                    <button id="btn-duplicate-card" type="button" style="flex:1; background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">📋 複製</button>
                 </div>
             </form>
         </aside>
     </div>
 
-    <!-- 💡 列印專用的隱形影子容器 -->
     <div id="print-area-container"></div>
 
-    <!-- JavaScript 核心處理邏輯 -->
     <script>
         let pageData = [
             { id: "page-1", name: "櫃台後鐵網A", w: 90, h: 30, cards: [] }
@@ -630,6 +615,8 @@
                         l = Math.max(0, Math.min(l, workCanvas.clientWidth - div.offsetWidth));
                         t = Math.max(0, Math.min(t, workCanvas.clientHeight - div.offsetHeight));
                         div.style.left = `${l}px`; div.style.top = `${t}px`;
+                        
+                        // 💡【核心修復點 1】：拖曳移動時，立刻更新記憶體陣列中的數據！
                         cardObj.x = l; cardObj.y = t;
                     } else if (isResizing) {
                         let w = startW + (mE.clientX - startX) / zoomRatio;
@@ -637,6 +624,8 @@
                         w = Math.max(40, Math.min(w, workCanvas.clientWidth - div.offsetLeft));
                         h = Math.max(40, Math.min(h, workCanvas.clientHeight - div.offsetTop));
                         div.style.width = `${w}px`; div.style.height = `${h}px`;
+                        
+                        // 💡【核心修復點 2】：拉動大小時，立刻更新記憶體陣列中的寬高！
                         cardObj.w = Math.round(w / SCALE); cardObj.h = Math.round(h / SCALE);
                         div.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
                         if (selectedCardId === id) { document.getElementById('edit-w').value = cardObj.w; document.getElementById('edit-h').value = cardObj.h; }
@@ -736,7 +725,6 @@
             el.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
         }
 
-        // 💡 終極「無感影子列印」：保證絕對不進行 reload、頁面 100% 留存不卡死
         function exportAllPagesToPDF() {
             deselectAll();
             const activePage = pageData.find(p => p.id === activePageId);
@@ -746,10 +734,8 @@
                 activePage.name = inputCanvasName.value || "未命名陳列區";
             }
 
-            // 1. 先清空影子容器
             printAreaContainer.innerHTML = "";
 
-            // 2. 注入多頁面結構
             pageData.forEach(page => {
                 let pageWrapper = document.createElement('div');
                 pageWrapper.className = "print-page-wrapper";
@@ -773,7 +759,6 @@
                 printAreaContainer.appendChild(pageWrapper);
             });
 
-            // 3. 複製卡牌至影子區
             pageData.forEach(page => {
                 const targetPrintCanvas = document.getElementById(`print-canvas-${page.id}`);
                 page.cards.forEach(card => {
@@ -810,14 +795,9 @@
                 });
             });
 
-            // 4. 直接列印，完全不碰原本的操作畫面
             setTimeout(() => {
                 window.print();
-                
-                // 💡 印完立刻清空影子區，操作畫面自始至終完全沒變過！
-                setTimeout(() => { 
-                    printAreaContainer.innerHTML = ""; 
-                }, 100);
+                setTimeout(() => { printAreaContainer.innerHTML = ""; }, 100);
             }, 100);
         }
     </script>
