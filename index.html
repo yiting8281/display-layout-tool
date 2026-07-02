@@ -32,7 +32,6 @@
             flex-shrink: 0;
         }
         
-        /* 🛠️ 關鍵修正：讓中央區域變成垂直排列，且有兩個獨立區塊 */
         .center-panel-wrapper {
             flex: 1;
             display: flex;
@@ -41,7 +40,6 @@
             background-color: #e5e7eb;
         }
         
-        /* 🛠️ 關鍵修正：固定在最上方的分頁與控制列區塊 */
         .top-control-sticky {
             background-color: #cbd5e1;
             width: 100%;
@@ -99,7 +97,6 @@
             box-sizing: border-box;
         }
 
-        /* 🛠️ 關鍵修正：純放畫布的滾動區，就算尺寸超大也會出現正常捲軸，絕不往上擠壓分頁 */
         .center-panel-canvas-scroll {
             flex: 1;
             overflow: auto;
@@ -304,7 +301,6 @@
             </div>
         </aside>
 
-        <!-- 🛠️ 關鍵修正：重新劃分獨立區塊，確保分頁列頂天立地，絕不破圖 -->
         <div class="center-panel-wrapper">
             <div class="top-control-sticky">
                 <div class="tab-bar" id="page-tabs"></div>
@@ -502,12 +498,24 @@
             saveToLocalStorage();
         });
 
+        // 🛠️ 關鍵修正：修復 deletePage 的時序污染 Bug
         function deletePage(pageId) {
             if (pageData.length <= 1) return;
             if (confirm("確定要刪除這張陳列圖頁面嗎？")) {
+                // 1. 如果被刪除的是「當前正在看的這一頁」，我們必須先乾淨地決定好下一個落腳的頁面 ID
+                let nextActiveId = activePageId;
+                if (activePageId === pageId) {
+                    const remainingPages = pageData.filter(p => p.id !== pageId);
+                    nextActiveId = remainingPages[remainingPages.length - 1].id;
+                }
+
+                // 2. 執行刪除過濾
                 pageData = pageData.filter(p => p.id !== pageId);
-                if (activePageId === pageId) { activePageId = pageData[pageData.length - 1].id; }
-                switchPage(activePageId);
+                
+                // 3. 關鍵一步：直接強制切換到下一頁，並帶入 true 隔離標記，防堵輸入框舊資料回填！
+                switchPage(nextActiveId, true);
+                
+                // 4. 同步儲存
                 saveToLocalStorage();
             }
         }
