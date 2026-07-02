@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - 真正完工版</title>
+    <title>展場陳列與價格排版示意工具 - 邊界全解放版</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -40,7 +40,7 @@
             flex-direction: column;
             align-items: center;
             overflow: auto;
-            padding: 20px;
+            padding: 40px;
             box-sizing: border-box;
         }
         .right-panel {
@@ -63,11 +63,13 @@
             transform-origin: top center;
             transition: transform 0.1s ease;
         }
+        /* 💡 核心修正：允許卡牌拉出綠框範圍，並且在框外依然看得見 */
         #work-canvas {
             position: relative;
             border: 4px solid #10b981;
             background-color: #ffffff;
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            overflow: visible !important; 
         }
         
         .card-element {
@@ -196,9 +198,11 @@
                 display: block !important;
                 margin: 0 auto 20px auto !important;
             }
-            .card-product { border-color: #38bdf8 !important; background-color: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .card-heading { border-color: #64748b !important; background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .card-annotation { border-color: #34d399 !important; background-color: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            /* 💡 列印時只輸出在畫布內（正座標）的卡牌，避免框外髒亂雜物被印出 */
+            .print-page-wrapper .card-element {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
     </style>
 </head>
@@ -207,7 +211,7 @@
     <div id="top-navbar" style="background-color: #1e293b; color: white; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; height: 60px; box-sizing: border-box; flex-shrink: 0;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 18px; font-weight: bold; letter-spacing: 0.05em;">展場陳列與價格排版示意工具</span>
-            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">終極同步版</span>
+            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">終極同步解放版</span>
         </div>
         <button id="btn-export-pdf" style="background-color: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">
             💾 導出所有陳列頁面 (PDF)
@@ -311,7 +315,7 @@
                         <input type="text" id="edit-orig" class="input-control" style="text-decoration: line-through; color: #6b7280;">
                     </div>
                 </div>
-                <div style="display: flex; gap: 8px; background-color: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #e2e2e2;" class="input-group">
+                <div style="display: flex; gap: 8px; background-color: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;" class="input-group">
                     <div style="flex: 1;">
                         <label style="font-size:11px;">精準寬 (cm)</label>
                         <input type="number" id="edit-w" class="input-control" style="text-align:center; font-family:monospace; padding:4px;">
@@ -330,8 +334,8 @@
                     <input type="text" id="edit-note" class="input-control">
                 </div>
                 <div style="display: flex; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                    <button id="btn-delete-card" type="button" style="flex:1; background-color: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; padding: 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">🗑️ 刪除</button>
-                    <button id="btn-duplicate-card" type="button" style="flex:1; background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">📋 複製</button>
+                    <button id="btn-delete-card" style="flex:1; background-color: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; padding: 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">🗑️ 刪除</button>
+                    <button id="btn-duplicate-card" style="flex:1; background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">📋 複製</button>
                 </div>
             </form>
         </aside>
@@ -536,6 +540,7 @@
             cardCounter++;
             const id = `card-${cardCounter}`;
             const cardObj = { id, type: data.type || "product", w: data.w, h: data.h, title: data.title, promo: data.promo, orig: data.orig, note: data.note, url: data.url || "", x: data.x || 20, y: data.y || 20 };
+            
             const activePage = pageData.find(p => p.id === activePageId);
             activePage.cards.push(cardObj);
             recreateCardDOM(cardObj);
@@ -613,7 +618,7 @@
                         let l = startLeft + (mE.clientX - startX) / zoomRatio;
                         let t = startTop + (mE.clientY - startY) / zoomRatio;
                         
-                        // 💡【徹底大解放】：移除了所有 Math.max(0, Math.min(...)) 的畫布邊界限制，允許卡牌完全拉到任何框外區域！
+                        // 💡 終極修正：把原本卡死在 clientWidth 邊界的 Math.min / Max 程式碼整行刪除！現在完全大解放！
                         div.style.left = `${l}px`; div.style.top = `${t}px`;
                         cardObj.x = l; cardObj.y = t;
                     } else if (isResizing) {
@@ -773,36 +778,39 @@
             pageData.forEach(page => {
                 const targetPrintCanvas = document.getElementById(`print-canvas-${page.id}`);
                 page.cards.forEach(card => {
-                    const cDiv = document.createElement('div');
-                    let typeClass = "card-product";
-                    if (card.type === "heading") typeClass = "card-heading";
-                    if (card.type === "annotation") typeClass = "card-annotation";
-                    
-                    cDiv.className = `card-element ${typeClass}`;
-                    cDiv.style.width = `${card.w * SCALE}px`;
-                    cDiv.style.height = `${card.h * SCALE}px`;
-                    cDiv.style.left = `${card.x}px`;
-                    cDiv.style.top = `${card.y}px`;
-                    
-                    let bodyStr = "";
-                    if (card.type === "heading") {
-                        bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; text-align:center;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; font-size:16px; color:#1e293b; text-decoration:none;">${card.title}</a></div>`;
-                    } else if (card.type === "annotation") {
-                        bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:flex-start; align-items:flex-start; text-align:left;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-size:12px; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${card.title}</a></div>`;
-                    } else {
-                        bodyStr = `
-                            <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
-                                <a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; border-bottom:1px solid #b3e5fc; text-align:center; font-size:12px; text-decoration:underline; color:#0c4a6e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${card.title}</a>
-                                <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
-                                    <div style="font-size:10px; color:#94a3b8; text-decoration:line-through;">$${card.orig}</div>
-                                    <div style="font-size:14px; font-weight:800; color:#dc2626;">$${card.promo}</div>
+                    // 💡 只把座標在大於 0 範圍（即留在畫布內）的卡牌塞進 PDF 影子區印出，拉到外面的暫存雜物一律不印！
+                    if (card.x >= 0 && card.y >= 0 && card.x < (page.w * SCALE) && card.y < (page.h * SCALE)) {
+                        const cDiv = document.createElement('div');
+                        let typeClass = "card-product";
+                        if (card.type === "heading") typeClass = "card-heading";
+                        if (card.type === "annotation") typeClass = "card-annotation";
+                        
+                        cDiv.className = `card-element ${typeClass}`;
+                        cDiv.style.width = `${card.w * SCALE}px`;
+                        cDiv.style.height = `${card.h * SCALE}px`;
+                        cDiv.style.left = `${card.x}px`;
+                        cDiv.style.top = `${card.y}px`;
+                        
+                        let bodyStr = "";
+                        if (card.type === "heading") {
+                            bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; text-align:center;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; font-size:16px; color:#1e293b; text-decoration:none;">${card.title}</a></div>`;
+                        } else if (card.type === "annotation") {
+                            bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:flex-start; align-items:flex-start; text-align:left;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-size:12px; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${card.title}</a></div>`;
+                        } else {
+                            bodyStr = `
+                                <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
+                                    <a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; border-bottom:1px solid #b3e5fc; text-align:center; font-size:12px; text-decoration:underline; color:#0c4a6e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${card.title}</a>
+                                    <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
+                                        <div style="font-size:10px; color:#94a3b8; text-decoration:line-through;">$${card.orig}</div>
+                                        <div style="font-size:14px; font-weight:800; color:#dc2626;">$${card.promo}</div>
+                                    </div>
+                                    <div style="font-size:9px; color:#0369a1; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${card.note || '&nbsp;'}</div>
                                 </div>
-                                <div style="font-size:9px; color:#0369a1; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${card.note || '&nbsp;'}</div>
-                            </div>
-                        `;
+                            `;
+                        }
+                        cDiv.innerHTML = bodyStr;
+                        targetPrintCanvas.appendChild(cDiv);
                     }
-                    cDiv.innerHTML = bodyStr;
-                    targetPrintCanvas.appendChild(cDiv);
                 });
             });
 
