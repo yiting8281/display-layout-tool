@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - PPTX最終版</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>展場陳列與價格排版示意工具 - 完美收工版</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@3.4.15"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
     <style>
         body {
@@ -15,10 +15,11 @@
             user-select: none;
             position: absolute;
             box-sizing: border-box;
+            z-index: 10;
         }
         .card-element.selected {
-            outline: 2px solid #2563eb !important;
-            box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 2px #2563eb, 0 0 10px rgba(37, 99, 235, 0.5);
         }
         .canvas-bg {
             background-size: 20px 20px;
@@ -34,6 +35,7 @@
             right: 0;
             cursor: se-resize;
             border-top-left-radius: 4px;
+            z-index: 20;
         }
     </style>
 </head>
@@ -42,7 +44,7 @@
     <header class="bg-slate-800 text-white px-6 py-3 flex justify-between items-center shadow-md shrink-0">
         <div class="flex items-center space-x-3">
             <span class="text-xl font-bold tracking-wider">展場陳列與價格排版示意工具</span>
-            <span class="text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full">PPTX 超連結版</span>
+            <span class="text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-full">精準修正版</span>
         </div>
         <button id="btn-export-ppt" class="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium shadow flex items-center space-x-2 transition cursor-pointer">
             <span>💾 導出陳列簡報 (PPTX)</span>
@@ -149,39 +151,39 @@
                     <p class="mb-2">📭 尚未選擇卡牌</p>
                     <p class="text-xs text-gray-300">請在中央畫布上點擊任何一張卡牌以開始編輯內容與精準尺寸</p>
                 </div>
-                <form id="property-form" class="space-y-4 hidden" onsubmit="event.preventDefault();">
+                <form id="property-form" class="space-y-4" style="display: none;" onsubmit="event.preventDefault();">
                     <input type="hidden" id="edit-card-id">
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1">商品名稱</label>
-                        <input type="text" id="edit-title" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm font-medium">
+                        <input type="text" id="edit-title" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">展場優惠價</label>
-                            <input type="text" id="edit-promo" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 text-sm font-bold text-red-600">
+                            <input type="text" id="edit-promo" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 text-sm font-bold text-red-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">原價</label>
-                            <input type="text" id="edit-orig" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 text-sm text-gray-500 line-through">
+                            <input type="text" id="edit-orig" class="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 text-sm text-gray-500 line-through focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
                         <div>
                             <label class="block text-[11px] font-medium text-slate-500 mb-1">精準寬度 (cm)</label>
-                            <input type="number" id="edit-w" class="w-full bg-white border border-gray-300 rounded p-1 text-xs text-center font-mono">
+                            <input type="number" id="edit-w" class="w-full bg-white border border-gray-300 rounded p-1 text-xs text-center font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-[11px] font-medium text-slate-500 mb-1">精準高度 (cm)</label>
-                            <input type="number" id="edit-h" class="w-full bg-white border border-gray-300 rounded p-1 text-xs text-center font-mono">
+                            <input type="number" id="edit-h" class="w-full bg-white border border-gray-300 rounded p-1 text-xs text-center font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1">商品連結網址 (選填)</label>
-                        <input type="url" id="edit-url" placeholder="https://example.com" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-xs font-mono text-blue-600">
+                        <input type="url" id="edit-url" placeholder="https://example.com" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-xs font-mono text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1">備註/規格說明</label>
-                        <input type="text" id="edit-note" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-xs">
+                        <input type="text" id="edit-note" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="pt-4 border-t border-gray-100 flex space-x-2">
                         <button id="btn-delete-card" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs py-2 rounded-lg font-medium transition cursor-pointer text-center">🗑️ 刪除卡牌</button>
@@ -282,169 +284,4 @@
                 const w = parseInt(document.getElementById('custom-card-w').value) || 10;
                 const h = parseInt(document.getElementById('custom-card-h').value) || 10;
                 const title = document.getElementById('custom-card-title').value.trim() || "自訂商品卡";
-                addCard({ w, h, title, promo: "0", orig: "0", note: "", url: "" });
-            });
-
-            document.getElementById('edit-title').addEventListener('input', syncFormToCard);
-            document.getElementById('edit-promo').addEventListener('input', syncFormToCard);
-            document.getElementById('edit-orig').addEventListener('input', syncFormToCard);
-            document.getElementById('edit-note').addEventListener('input', syncFormToCard);
-            document.getElementById('edit-url').addEventListener('input', syncFormToCard);
-            
-            document.getElementById('edit-w').addEventListener('input', syncFormToCardDimensions);
-            document.getElementById('edit-h').addEventListener('input', syncFormToCardDimensions);
-
-            document.getElementById('btn-delete-card').addEventListener('click', () => {
-                if (!selectedCardId) return;
-                const el = document.getElementById(selectedCardId);
-                if (el) el.remove();
-                cards = cards.filter(c => c.id !== selectedCardId);
-                deselectAll();
-            });
-
-            document.getElementById('btn-duplicate-card').addEventListener('click', () => {
-                if (!selectedCardId) return;
-                const current = cards.find(c => c.id === selectedCardId);
-                if (!current) return;
-                addCard({
-                    w: current.w, h: current.h, title: current.title + " (複製)",
-                    promo: current.promo, orig: current.orig, note: current.note, url: current.url,
-                    x: current.x + 25, y: current.y + 25
-                });
-            });
-
-            document.getElementById('btn-export-ppt').addEventListener('click', exportToPPTX);
-            workCanvas.addEventListener('click', (e) => { if (e.target === workCanvas) deselectAll(); });
-        }
-
-        function addCard(data) {
-            cardCounter++;
-            const id = `card-${cardCounter}`;
-            
-            const cardObj = {
-                id: id, w: data.w, h: data.h, title: data.title, promo: data.promo, orig: data.orig, note: data.note, url: data.url || "",
-                x: data.x !== undefined ? data.x : 20, y: data.y !== undefined ? data.y : 20
-            };
-            cards.push(cardObj);
-
-            const div = document.createElement('div');
-            div.id = id;
-            div.className = "card-element bg-sky-50 border-2 border-sky-400 text-sky-950 p-2 rounded-md flex flex-col justify-between overflow-hidden shadow-sm";
-            div.style.width = `${cardObj.w * SCALE}px`;
-            div.style.height = `${cardObj.h * SCALE}px`;
-            div.style.left = `${cardObj.x}px`;
-            div.style.top = `${cardObj.y}px`;
-
-            div.innerHTML = `
-                <div class="w-full flex flex-col h-full pointer-events-none select-none">
-                    <div class="font-bold border-b border-sky-300 pb-0.5 text-center text-xs tracking-tight truncate card-ui-title underline decoration-sky-400">${cardObj.title}</div>
-                    <div class="flex-1 flex flex-col justify-center items-center py-1">
-                        <div class="text-[10px] text-gray-400 line-through card-ui-orig">$${cardObj.orig}</div>
-                        <div class="text-sm font-extrabold text-red-600 leading-none card-ui-promo">$${cardObj.promo}</div>
-                    </div>
-                    <div class="text-[9px] text-sky-700 text-center truncate card-ui-note">${cardObj.note || '&nbsp;'}</div>
-                    <div class="absolute bottom-1 left-1 text-[9px] text-gray-400 font-mono scale-75 card-ui-dim">${cardObj.w}x${cardObj.h}</div>
-                </div>
-                <div class="resize-handle"></div>
-            `;
-
-            let isDragging = false;
-            let isResizing = false;
-            let startX, startY, startLeft, startTop, startWidth, startHeight;
-
-            div.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-                selectCard(id);
-
-                if (e.target.classList.contains('resize-handle')) {
-                    isResizing = true;
-                    startX = e.clientX;
-                    startY = e.clientY;
-                    startWidth = div.offsetWidth;
-                    startHeight = div.offsetHeight;
-                } else {
-                    isDragging = true;
-                    startX = e.clientX;
-                    startY = e.clientY;
-                    startLeft = div.offsetLeft;
-                    startTop = div.offsetTop;
-                    document.querySelectorAll('.card-element').forEach(c => c.style.zIndex = 10);
-                    div.style.zIndex = 50;
-                }
-
-                const handleMouseMove = (moveEvent) => {
-                    if (isDragging) {
-                        let newLeft = startLeft + (moveEvent.clientX - startX);
-                        let newTop = startTop + (moveEvent.clientY - startY);
-                        
-                        newLeft = Math.max(0, Math.min(newLeft, workCanvas.clientWidth - div.offsetWidth));
-                        newTop = Math.max(0, Math.min(newTop, workCanvas.clientHeight - div.offsetHeight));
-
-                        div.style.left = `${newLeft}px`;
-                        div.style.top = `${newTop}px`;
-                        cardObj.x = newLeft;
-                        cardObj.y = newTop;
-                    } else if (isResizing) {
-                        let newWidth = startWidth + (moveEvent.clientX - startX);
-                        let newHeight = startHeight + (moveEvent.clientY - startY);
-
-                        newWidth = Math.max(40, Math.min(newWidth, workCanvas.clientWidth - div.offsetLeft));
-                        newHeight = Math.max(40, Math.min(newHeight, workCanvas.clientHeight - div.offsetTop));
-
-                        div.style.width = `${newWidth}px`;
-                        div.style.height = `${newHeight}px`;
-
-                        const cmW = Math.round(newWidth / SCALE);
-                        const cmH = Math.round(newHeight / SCALE);
-                        cardObj.w = cmW;
-                        cardObj.h = cmH;
-
-                        div.querySelector('.card-ui-dim').textContent = `${cmW}x${cmH}`;
-                        if (selectedCardId === id) {
-                            document.getElementById('edit-w').value = cmW;
-                            document.getElementById('edit-h').value = cmH;
-                        }
-                    }
-                };
-
-                const handleMouseUp = () => {
-                    isDragging = false;
-                    isResizing = false;
-                    document.removeEventListener('mousemove', handleMouseMove);
-                    document.removeEventListener('mouseup', handleMouseUp);
-                };
-
-                document.addEventListener('mousemove', handleMouseMove);
-                document.addEventListener('mouseup', handleMouseUp);
-            });
-
-            workCanvas.appendChild(div);
-            selectCard(id);
-        }
-
-        function selectCard(id) {
-            document.querySelectorAll('.card-element').forEach(el => el.classList.remove('selected'));
-            selectedCardId = id;
-            const currentEl = document.getElementById(id);
-            if(currentEl) currentEl.classList.add('selected');
-
-            const cardObj = cards.find(c => c.id === id);
-            if (cardObj) {
-                propertyPlaceholder.classList.add('hidden');
-                propertyForm.classList.remove('hidden');
-                document.getElementById('edit-card-id').value = id;
-                document.getElementById('edit-title').value = cardObj.title;
-                document.getElementById('edit-promo').value = cardObj.promo;
-                document.getElementById('edit-orig').value = cardObj.orig;
-                document.getElementById('edit-note').value = cardObj.note;
-                document.getElementById('edit-url').value = cardObj.url || "";
-                document.getElementById('edit-w').value = cardObj.w;
-                document.getElementById('edit-h').value = cardObj.h;
-            }
-        }
-
-        function deselectAll() {
-            selectedCardId = null;
-            document.querySelectorAll('.card-element').forEach(el => el.classList.remove('selected'));
-            propertyPlaceholder.classList.remove('hidden');
-            propertyForm.classList.add('hidden
+                addCard({ w, h, title, promo: "0", orig: "0",
