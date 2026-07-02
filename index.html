@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>展場陳列與價格排版示意工具 - 邊界解鎖版</title>
+    <title>展場陳列與價格排版示意工具 - 最終修復版</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -52,10 +52,9 @@
             box-sizing: border-box;
             flex-shrink: 0;
         }
-        /* 💡 增加 padding 空間，讓卡牌拉出綠框外時，背景依然有白色襯底，列印時也抓得到 */
         .canvas-container-wrapper {
             background-color: white;
-            padding: 100px 120px; /* 大量加寬畫布外圍的白色暫存區空間 */
+            padding: 24px;
             border-radius: 12px;
             border: 1px solid #e5e7eb;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
@@ -69,10 +68,9 @@
             border: 4px solid #10b981;
             background-color: #ffffff;
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            overflow: visible !important; /* 💡 關鍵：允許內容溢出框外 */
         }
         
-        /* 各式卡牌樣式 */
+        /* 卡牌樣式 */
         .card-element {
             position: absolute;
             padding: 8px;
@@ -153,28 +151,27 @@
             background-color: white;
             color: #1e293b;
         }
-        .tab-close { color: #94a3b8; cursor: pointer; font-weight: normal; }
+        .tab-close {
+            color: #94a3b8;
+            cursor: pointer;
+            font-weight: normal;
+        }
         .tab-close:hover { color: #ef4444; }
 
         #print-area-container { display: none; position: absolute; left: -9999px; top: -9999px; }
 
-        /* PDF 列印媒體樣式 */
+        /* 💡 PDF 列印媒體樣式：強制橫向列印，杜絕切邊 */
         @media print {
+            @page {
+                size: landscape; /* 💡 關鍵：強制瀏覽器採用橫向 A4 紙張列印 */
+                margin: 1cm;
+            }
             body, html { background-color: white !important; height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
             #top-navbar, .app-container { display: none !important; }
             #print-area-container { display: block !important; position: static !important; width: 100% !important; overflow: visible !important; }
             .print-page-wrapper { page-break-after: always; break-after: page; display: block !important; box-sizing: border-box; }
             .print-page-wrapper:last-child { page-break-after: avoid !important; break-after: avoid !important; }
-            
-            /* 列印時也完整保留大範圍 padding，使框外的備註紙條得以下載 */
-            .canvas-container-wrapper { 
-                transform: scale(0.85) !important; /* 💡 稍微縮放以確保框外的備註紙條也能完美收進 A4 紙張內 */
-                border: none !important; 
-                box-shadow: none !important; 
-                padding: 60px 80px !important; 
-                display: block !important; 
-                margin: 0 auto !important; 
-            }
+            .canvas-container-wrapper { transform: scale(1) !important; border: none !important; box-shadow: none !important; padding: 0 !important; display: block !important; margin: 0 auto 20px auto !important; }
             .card-product { border-color: #38bdf8 !important; background-color: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .card-heading { border-color: #64748b !important; background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .card-annotation { border-color: #34d399 !important; background-color: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -183,21 +180,18 @@
 </head>
 <body>
 
-    <!-- 頂部導航列 -->
     <div id="top-navbar" style="background-color: #1e293b; color: white; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; height: 60px; box-sizing: border-box; flex-shrink: 0;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 18px; font-weight: bold; letter-spacing: 0.05em;">展場陳列與價格排版示意工具</span>
-            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">PDF 多分頁完工版</span>
+            <span style="background-color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">PDF 多分頁版</span>
         </div>
         <button id="btn-export-pdf" style="background-color: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">
             💾 導出所有陳列頁面 (PDF)
         </button>
     </div>
 
-    <!-- 主工作區 -->
     <div class="app-container">
         
-        <!-- 左側面板 -->
         <aside class="left-panel">
             <div style="margin-bottom: 20px;">
                 <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">🖼️ 1. 當前頁面畫布尺寸</h3>
@@ -248,12 +242,9 @@
             </div>
         </aside>
 
-        <!-- 中央工作區面板 -->
         <main class="center-panel" id="canvas-wrapper">
-            <!-- 畫布分頁標籤列 -->
             <div class="tab-bar" id="page-tabs"></div>
             
-            <!-- 縮放控制列 -->
             <div id="zoom-controls" style="background-color: white; width: 100%; max-width: 950px; padding: 6px 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; box-sizing: border-box;">
                 <button id="btn-zoom-out" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">🔍 縮小 (-)</button>
                 <span id="zoom-display" style="font-size: 12px; font-weight: bold; color:#475569; min-width:40px; text-align:center; align-self:center;">100%</span>
@@ -261,7 +252,6 @@
                 <button id="btn-zoom-reset" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">重設</button>
             </div>
 
-            <!-- 主畫布容器外殼 -->
             <div id="canvas-holder-element" class="canvas-container-wrapper">
                 <div id="export-container" style="display: inline-block;">
                     <div style="border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
@@ -271,13 +261,11 @@
                         </div>
                         <div id="canvas-display-size" style="font-family: monospace; font-weight: bold; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #334155;">90 x 30 cm</div>
                     </div>
-                    <!-- 綠色主畫布 -->
                     <div id="work-canvas" style="width: 900px; height: 300px;"></div>
                 </div>
             </div>
         </main>
 
-        <!-- 右側屬性面板 -->
         <aside class="right-panel">
             <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">⚙️ 3. 卡牌屬性編輯</h3>
             <div id="property-placeholder" style="color: #9ca3af; padding-top: 40px; text-align: center; font-size: 14px;">
@@ -481,9 +469,8 @@
             document.getElementById('btn-add-large').addEventListener('click', () => addCard({ type: "product", w: 15, h: 20, title: "Race Belt 號碼帶", promo: "420", orig: "500", note: "展場價" }));
             document.getElementById('btn-add-medium').addEventListener('click', () => addCard({ type: "product", w: 12, h: 12, title: "UNIQ 手腕帶", promo: "380", orig: "450", note: "展場價" }));
             document.getElementById('btn-add-horizontal').addEventListener('click', () => addCard({ type: "product", w: 20, h: 10, title: "Thin On/Off.3 透氣頭帶", promo: "550", orig: "650", note: "展場價" }));
-            
             document.getElementById('btn-add-heading').addEventListener('click', () => addCard({ type: "heading", w: 40, h: 10, title: "COMPRESSPORT 品牌特惠區", promo: "", orig: "", note: "" }));
-            document.getElementById('btn-add-annotation').addEventListener('click', () => addCard({ type: "annotation", w: 30, h: 12, title: "📢 買一送一，限同品項(不可混搭)", promo: "", orig: "", note: "" }));
+            document.getElementById('btn-add-annotation').addEventListener('click', () => addCard({ type: "annotation", w: 30, h: 12, title: "📢 活動說明文案填寫處", promo: "", orig: "", note: "" }));
 
             document.getElementById('btn-add-custom-card').addEventListener('click', () => {
                 const w = parseInt(document.getElementById('custom-card-w').value) || 10;
@@ -501,20 +488,38 @@
             document.getElementById('edit-w').addEventListener('input', syncFormToCardDimensions);
             document.getElementById('edit-h').addEventListener('input', syncFormToCardDimensions);
 
+            // 💡 終極Bug修復：刪除時，同步剔除 pageData 裡的存檔，再也不會閃退或不見！
             document.getElementById('btn-delete-card').addEventListener('click', () => {
                 if (!selectedCardId) return;
-                document.getElementById(selectedCardId).remove();
+                const el = document.getElementById(selectedCardId);
+                if (el) el.remove();
+                
                 const activePage = pageData.find(p => p.id === activePageId);
-                activePage.cards = activePage.cards.filter(c => c.id !== selectedCardId);
+                if (activePage) {
+                    activePage.cards = activePage.cards.filter(c => c.id !== selectedCardId);
+                }
                 deselectAll();
             });
 
+            // 💡 終極Bug修復：複製時，同步塞入 pageData 存檔
             document.getElementById('btn-duplicate-card').addEventListener('click', () => {
                 if (!selectedCardId) return;
                 const activePage = pageData.find(p => p.id === activePageId);
                 const current = activePage.cards.find(c => c.id === selectedCardId);
                 if (!current) return;
-                addCard({ type: current.type, w: current.w, h: current.h, title: current.title + " (複製)", promo: current.promo, orig: current.orig, note: current.note, url: current.url, x: current.x + 25, y: current.y + 25 });
+                
+                addCard({ 
+                    type: current.type, 
+                    w: current.w, 
+                    h: current.h, 
+                    title: current.title + " (複製)", 
+                    promo: current.promo, 
+                    orig: current.orig, 
+                    note: current.note, 
+                    url: current.url, 
+                    x: current.x + 25, 
+                    y: current.y + 25 
+                });
             });
 
             document.getElementById('btn-export-pdf').addEventListener('click', exportAllPagesToPDF);
@@ -524,8 +529,8 @@
         function addCard(data) {
             cardCounter++;
             const id = `card-${cardCounter}`;
-            // 預設產生的中心點稍微往下移，更方便直接往外拉
-            const cardObj = { id, type: data.type || "product", w: data.w, h: data.h, title: data.title, promo: data.promo, orig: data.orig, note: data.note, url: data.url || "", x: data.x || 40, y: data.y || 40 };
+            const cardObj = { id, type: data.type || "product", w: data.w, h: data.h, title: data.title, promo: data.promo, orig: data.orig, note: data.note, url: data.url || "", x: data.x || 20, y: data.y || 20 };
+            
             const activePage = pageData.find(p => p.id === activePageId);
             activePage.cards.push(cardObj);
             recreateCardDOM(cardObj);
@@ -551,14 +556,14 @@
                 innerHTML = `
                     <div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; text-align:center;">
                         <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; font-size:16px; color:#1e293b; text-decoration:none;">${cardObj.title}</a>
-                        <div class="card-ui-dim" style="position:absolute; bottom:2px; left:4px; font-size:9px; color:#94a3b8; font-family:monospace; pointer-events:none;">${cardObj.w}x${cardObj.h} (標題)</div>
+                        <div class="card-ui-dim" style="position:absolute; bottom:2px; left:4px; font-size:9px; color:#94a3b8; font-family:monospace; pointer-events:none;">${cardObj.w}x${cardObj.h}</div>
                     </div>
                 `;
             } else if (cardObj.type === "annotation") {
                 innerHTML = `
-                    <div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; text-align:center; padding: 4px;">
-                        <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-size:14px; font-weight:500; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${cardObj.title}</a>
-                        <div class="card-ui-dim" style="position:absolute; bottom:2px; left:4px; font-size:9px; color:#94a3b8; font-family:monospace; pointer-events:none;">${cardObj.w}x${cardObj.h} (備註)</div>
+                    <div style="width:100%; height:100%; display:flex; justify-content:flex-start; align-items:flex-start; text-align:left;">
+                        <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-size:12px; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${cardObj.title}</a>
+                        <div class="card-ui-dim" style="position:absolute; bottom:2px; left:4px; font-size:9px; color:#94a3b8; font-family:monospace; pointer-events:none;">${cardObj.w}x${cardObj.h}</div>
                     </div>
                 `;
             } else {
@@ -602,26 +607,18 @@
                     if (isDragging) {
                         let l = startLeft + (mE.clientX - startX) / zoomRatio;
                         let t = startTop + (mE.clientY - startY) / zoomRatio;
-                        
-                        // 💡 徹底解鎖：刪除原先限制在 workCanvas 寬高內的限制判定，允許負數或超出極限
-                        div.style.left = `${l}px`; 
-                        div.style.top = `${t}px`;
-                        cardObj.x = l; 
-                        cardObj.y = t;
+                        l = Math.max(0, Math.min(l, workCanvas.clientWidth - div.offsetWidth));
+                        t = Math.max(0, Math.min(t, workCanvas.clientHeight - div.offsetHeight));
+                        div.style.left = `${l}px`; div.style.top = `${t}px`;
+                        cardObj.x = l; cardObj.y = t;
                     } else if (isResizing) {
                         let w = startW + (mE.clientX - startX) / zoomRatio;
                         let h = startH + (mE.clientY - startY) / zoomRatio;
-                        
-                        w = Math.max(40, w);
-                        h = Math.max(40, h);
-
-                        div.style.width = `${w}px`;
-                        div.style.height = `${h}px`;
-
-                        const cmW = Math.round(w / SCALE);
-                        const cmH = Math.round(h / SCALE);
-                        cardObj.w = cmW; cardObj.h = cmH;
-                        div.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}` + (cardObj.type !== 'product' ? ` (${cardObj.type === 'heading' ? '標題' : '備註'})` : '');
+                        w = Math.max(40, Math.min(w, workCanvas.clientWidth - div.offsetLeft));
+                        h = Math.max(40, Math.min(h, workCanvas.clientHeight - div.offsetTop));
+                        div.style.width = `${w}px`; div.style.height = `${h}px`;
+                        cardObj.w = Math.round(w / SCALE); cardObj.h = Math.round(h / SCALE);
+                        div.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
                         if (selectedCardId === id) { document.getElementById('edit-w').value = cardObj.w; document.getElementById('edit-h').value = cardObj.h; }
                     }
                 };
@@ -712,15 +709,14 @@
             const el = document.getElementById(selectedCardId);
             const nw = parseInt(document.getElementById('edit-w').value) || 5;
             const nh = parseInt(document.getElementById('edit-h').value) || 5;
-            
-            // 💡 側邊欄改動數值時也同步解鎖極限限制
-            cardObj.w = nw;
-            cardObj.h = nh;
+            cardObj.w = Math.min(nw, Math.round((workCanvas.clientWidth - el.offsetLeft)/SCALE));
+            cardObj.h = Math.min(nh, Math.round((workCanvas.clientHeight - el.offsetTop)/SCALE));
             el.style.width = `${cardObj.w * SCALE}px`;
             el.style.height = `${cardObj.h * SCALE}px`;
-            el.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}` + (cardObj.type !== 'product' ? ` (${cardObj.type === 'heading' ? '標題' : '備註'})` : '');
+            el.querySelector('.card-ui-dim').textContent = `${cardObj.w}x${cardObj.h}`;
         }
 
+        // 💡 影子區域純淨渲染 PDF 技術
         function exportAllPagesToPDF() {
             deselectAll();
             const activePage = pageData.find(p => p.id === activePageId);
@@ -748,7 +744,7 @@
                         </div>
                         <div style="font-family: monospace; font-weight: bold; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #334155;">${page.w} x ${page.h} cm</div>
                     </div>
-                    <div id="print-canvas-${page.id}" style="position: relative; border: 4px solid #10b981; background-color: #ffffff; width: ${page.w * SCALE}px; height: ${page.h * SCALE}px; overflow: visible !important;"></div>
+                    <div id="print-canvas-${page.id}" style="position: relative; border: 4px solid #10b981; background-color: #ffffff; width: ${page.w * SCALE}px; height: ${page.h * SCALE}px; overflow: hidden;"></div>
                 `;
                 wrapper.appendChild(innerContainer);
                 pageWrapper.appendChild(wrapper);
@@ -773,7 +769,7 @@
                     if (card.type === "heading") {
                         bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; text-align:center;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; font-size:16px; color:#1e293b; text-decoration:none;">${card.title}</a></div>`;
                     } else if (card.type === "annotation") {
-                        bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; text-align:center; padding:4px;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-size:14px; font-weight:500; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${card.title}</a></div>`;
+                        bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:flex-start; align-items:flex-start; text-align:left;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-size:12px; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${card.title}</a></div>`;
                     } else {
                         bodyStr = `
                             <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
