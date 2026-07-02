@@ -31,18 +31,87 @@
             box-sizing: border-box;
             flex-shrink: 0;
         }
-        .center-panel {
+        
+        /* 🛠️ 關鍵修正：讓中央區域變成垂直排列，且有兩個獨立區塊 */
+        .center-panel-wrapper {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
             background-color: #e5e7eb;
-            background-size: 20px 20px;
-            background-image: linear-gradient(to right, #d1d5db 1px, transparent 1px), linear-gradient(to bottom, #d1d5db 1px, transparent 1px);
+        }
+        
+        /* 🛠️ 關鍵修正：固定在最上方的分頁與控制列區塊 */
+        .top-control-sticky {
+            background-color: #cbd5e1;
+            width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow: auto;
-            padding: 40px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            border-bottom: 1px solid #cbd5e1;
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            width: 100%;
+            max-width: 100%;
+            background-color: #e2e8f0;
+            padding: 8px 16px 0 16px;
+            box-sizing: border-box;
+            overflow-x: auto;
+        }
+        .tab-button {
+            padding: 8px 16px;
+            background-color: #cbd5e1;
+            color: #475569;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .tab-button.active {
+            background-color: white;
+            color: #1e293b;
+        }
+        .tab-close {
+            color: #94a3b8;
+            cursor: pointer;
+            font-weight: normal;
+        }
+        .tab-close:hover { color: #ef4444; }
+
+        #zoom-controls {
+            background-color: white; 
+            width: 100%; 
+            padding: 6px 24px; 
+            border-bottom: 1px solid #e2e8f0; 
+            display: flex; 
+            justify-content: flex-end; 
+            gap: 10px; 
             box-sizing: border-box;
         }
+
+        /* 🛠️ 關鍵修正：純放畫布的滾動區，就算尺寸超大也會出現正常捲軸，絕不往上擠壓分頁 */
+        .center-panel-canvas-scroll {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            box-sizing: border-box;
+            background-size: 20px 20px;
+            background-image: linear-gradient(to right, #d1d5db 1px, transparent 1px), linear-gradient(to bottom, #d1d5db 1px, transparent 1px);
+        }
+
         .right-panel {
             width: 320px;
             background-color: white;
@@ -59,7 +128,6 @@
             border: 1px solid #e5e7eb;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             display: inline-block;
-            margin-top: 10px;
             transform-origin: top center;
             transition: transform 0.1s ease;
         }
@@ -123,42 +191,6 @@
         .input-group { margin-bottom: 12px; }
         .input-group label { display: block; font-size: 12px; color: #4b5563; margin-bottom: 4px; font-weight: 500; }
         .input-control { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
-
-        .tab-bar {
-            display: flex;
-            gap: 4px;
-            width: 100%;
-            max-width: 950px;
-            background-color: #e2e8f0;
-            padding: 6px 6px 0 6px;
-            border-radius: 8px 8px 0 0;
-            box-sizing: border-box;
-            overflow-x: auto;
-        }
-        .tab-button {
-            padding: 8px 16px;
-            background-color: #cbd5e1;
-            color: #475569;
-            border: none;
-            border-radius: 6px 6px 0 0;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-        }
-        .tab-button.active {
-            background-color: white;
-            color: #1e293b;
-        }
-        .tab-close {
-            color: #94a3b8;
-            cursor: pointer;
-            font-weight: normal;
-        }
-        .tab-close:hover { color: #ef4444; }
 
         #print-area-container {
             display: none;
@@ -272,29 +304,33 @@
             </div>
         </aside>
 
-        <main class="center-panel" id="canvas-wrapper">
-            <div class="tab-bar" id="page-tabs"></div>
-            
-            <div id="zoom-controls" style="background-color: white; width: 100%; max-width: 950px; padding: 6px 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; box-sizing: border-box;">
-                <button id="btn-zoom-out" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">🔍 縮小 (-)</button>
-                <span id="zoom-display" style="font-size: 12px; font-weight: bold; color:#475569; min-width:40px; text-align:center; align-self:center;">100%</span>
-                <button id="btn-zoom-in" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">🔍 放大 (+)</button>
-                <button id="btn-zoom-reset" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">重設</button>
-            </div>
-
-            <div id="canvas-holder-element" class="canvas-container-wrapper">
-                <div id="export-container" style="display: inline-block;">
-                    <div style="border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
-                        <div>
-                            <h2 id="canvas-display-name" style="margin: 0; font-size: 18px; color: #1e293b; font-weight: bold;">櫃台後鐵網 A</h2>
-                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280;">比例尺：10 像素(px) = 1 公分(cm)</p>
-                        </div>
-                        <div id="canvas-display-size" style="font-family: monospace; font-weight: bold; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #334155;">90 x 30 cm</div>
-                    </div>
-                    <div id="work-canvas" style="width: 900px; height: 300px;"></div>
+        <!-- 🛠️ 關鍵修正：重新劃分獨立區塊，確保分頁列頂天立地，絕不破圖 -->
+        <div class="center-panel-wrapper">
+            <div class="top-control-sticky">
+                <div class="tab-bar" id="page-tabs"></div>
+                <div id="zoom-controls">
+                    <button id="btn-zoom-out" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">🔍 縮小 (-)</button>
+                    <span id="zoom-display" style="font-size: 12px; font-weight: bold; color:#475569; min-width:40px; text-align:center; align-self:center;">100%</span>
+                    <button id="btn-zoom-in" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">🔍 放大 (+)</button>
+                    <button id="btn-zoom-reset" style="padding: 2px 8px; font-size: 12px; cursor: pointer;">重設</button>
                 </div>
             </div>
-        </main>
+            
+            <div class="center-panel-canvas-scroll" id="canvas-wrapper">
+                <div id="canvas-holder-element" class="canvas-container-wrapper">
+                    <div id="export-container" style="display: inline-block;">
+                        <div style="border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+                            <div>
+                                <h2 id="canvas-display-name" style="margin: 0; font-size: 18px; color: #1e293b; font-weight: bold;">櫃台後鐵網 A</h2>
+                                <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280;">比例尺：10 像素(px) = 1 公分(cm)</p>
+                            </div>
+                            <div id="canvas-display-size" style="font-family: monospace; font-weight: bold; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #334155;">90 x 30 cm</div>
+                        </div>
+                        <div id="work-canvas" style="width: 900px; height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <aside class="right-panel">
             <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">⚙️ 3. 卡牌屬性編輯</h3>
@@ -388,7 +424,6 @@
         window.addEventListener('DOMContentLoaded', () => {
             loadPresetsToDropdown();
             renderTabs();
-            // 💡 初始化載入，加入 true 告訴程式「這是重新整理，不要偷存髒資料」
             switchPage(activePageId, true);
             setupEventListeners();
             setupZoomListeners();
@@ -433,9 +468,7 @@
             });
         }
 
-        // 💡 關鍵修正點：加入 isInit 判斷
         function switchPage(pageId, isInit = false) {
-            // 如果不是剛重整網頁，才把當前輸入框資料存回去
             if (!isInit) {
                 const activePage = pageData.find(p => p.id === activePageId);
                 if (activePage) {
@@ -448,7 +481,6 @@
             activePageId = pageId;
             const targetPage = pageData.find(p => p.id === pageId);
             
-            // 正確載入目標頁面的名字與尺寸
             inputCanvasW.value = targetPage.w;
             inputCanvasH.value = targetPage.h;
             inputCanvasName.value = targetPage.name;
@@ -835,7 +867,6 @@
                     <div id="print-canvas-${page.id}" style="position: relative; border: 4px solid #10b981; background-color: #ffffff; width: ${page.w * SCALE}px; height: ${page.h * SCALE}px;"></div>
                 `;
                 wrapper.appendChild(innerContainer);
-                pageWrapper.appendChild(wrapper);
                 pageWrapper.appendChild(wrapper);
                 printAreaContainer.appendChild(pageWrapper);
             });
