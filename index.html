@@ -231,7 +231,7 @@
             <div style="margin-bottom: 20px;">
                 <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">🖼️ 1. 當前頁面畫布尺寸</h3>
                 <div class="input-group">
-                    <label>選擇常用尺寸</label>
+                    <label>選擇常用尺寸模板（僅變更寬高）</label>
                     <select id="select-canvas-preset" class="input-control"></select>
                 </div>
                 <div style="display: flex; gap: 8px;" class="input-group">
@@ -248,7 +248,7 @@
                     <label>修改當前頁面名稱</label>
                     <input type="text" id="input-canvas-name" value="櫃台後鐵網A" class="input-control">
                 </div>
-                <button id="btn-save-canvas-preset" style="width:100%; background-color: #475569; color:white; padding: 8px; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight: bold; margin-bottom:8px;">📌 儲存此尺寸至常用列表</button>
+                <button id="btn-save-canvas-preset" style="width:100%; background-color: #475569; color:white; padding: 8px; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight: bold; margin-bottom:8px;">📌 儲存目前寬高至常用列表</button>
                 <button id="btn-add-new-page" style="width:100%; background-color: #0284c7; color:white; padding: 10px; border:none; border-radius:6px; font-size:13px; cursor:pointer; font-weight: bold;">➕ 新增下一個陳列區(新頁面)</button>
             </div>
 
@@ -347,18 +347,15 @@
     <div id="print-area-container"></div>
 
     <script>
-        // 💾 從 LocalStorage 載入資料，如果完全沒有資料則初始化預設分頁
         let pageData = JSON.parse(localStorage.getItem('exhibition_page_data')) || [
             { id: "page-1", name: "櫃台後鐵網A", w: 90, h: 30, cards: [] }
         ];
         let activePageId = localStorage.getItem('exhibition_active_page_id') || pageData[0].id;
         
-        // 確保 activePageId 存在於目前的 pageData 中，避免刪除分頁產生的極端錯誤
         if(!pageData.some(p => p.id === activePageId)) {
             activePageId = pageData[0].id;
         }
 
-        // 計算目前的 cardCounter 最大值以防止 ID 重複
         let cardCounter = 0;
         pageData.forEach(p => {
             p.cards.forEach(c => {
@@ -396,7 +393,6 @@
             setupZoomListeners();
         });
 
-        // 📝 核心自動儲存函數
         function saveToLocalStorage() {
             localStorage.setItem('exhibition_page_data', JSON.stringify(pageData));
             localStorage.setItem('exhibition_active_page_id', activePageId);
@@ -404,6 +400,7 @@
 
         function loadPresetsToDropdown() {
             selectCanvasPreset.innerHTML = `
+                <option value="" disabled selected hidden>--- 選擇常用尺寸範本 ---</option>
                 <option value="90x30">櫃位後鐵網 A (90 x 30 cm)</option>
                 <option value="120x60">大型陳列架 B (120 x 60 cm)</option>
                 <option value="60x40">中型展示櫃 C (60 x 40 cm)</option>
@@ -436,7 +433,7 @@
         }
 
         function switchPage(pageId) {
-            // 1. 在切換前，先把舊分頁在輸入框內的最終資訊更新回 pageData
+            // 保存當前頁面資料
             const activePage = pageData.find(p => p.id === activePageId);
             if (activePage) {
                 activePage.w = parseInt(inputCanvasW.value) || 90;
@@ -444,22 +441,23 @@
                 activePage.name = inputCanvasName.value || "未命名陳列區";
             }
             
-            // 2. 切換當前活動分頁 ID
+            // 切換
             activePageId = pageId;
             const targetPage = pageData.find(p => p.id === pageId);
             
-            // 3. 將新分頁的資料餵給輸入欄位
             inputCanvasW.value = targetPage.w;
             inputCanvasH.value = targetPage.h;
             inputCanvasName.value = targetPage.name;
             
-            // 4. 重建畫布 UI
+            // 重置選單成未選狀態，防止它去干擾
+            selectCanvasPreset.selectedIndex = 0;
+            
             workCanvas.innerHTML = "";
             deselectAll();
-            updateCanvasSizeUI(); // 僅更新畫面，不在此重複寫入以避免覆蓋
+            updateCanvasSizeUI(); 
             renderTabs();
             targetPage.cards.forEach(cardData => recreateCardDOM(cardData));
-            saveToLocalStorage(); // 同步至本地端
+            saveToLocalStorage(); 
         }
 
         document.getElementById('btn-add-new-page').addEventListener('click', () => {
@@ -479,7 +477,6 @@
             }
         }
 
-        // 用來實時同步 input 輸入到陣列並更新介面
         function updateCanvasSize() {
             const w = parseInt(inputCanvasW.value) || 90;
             const h = parseInt(inputCanvasH.value) || 30;
@@ -490,7 +487,6 @@
             canvasDisplayName.textContent = name;
             canvasDisplaySize.textContent = `${w} x ${h} cm`;
             
-            // 確實同步到目前分頁的陣列資料中
             const activePage = pageData.find(p => p.id === activePageId);
             if (activePage) { 
                 activePage.w = w; 
@@ -498,14 +494,12 @@
                 activePage.name = name; 
             }
             
-            // 即時反應到上方 Tab 名字
             const activeTab = document.querySelector('.tab-button.active span');
             if(activeTab) activeTab.textContent = name;
             
             saveToLocalStorage();
         }
 
-        // 僅單純根據目前輸入值更新畫布大小與文字 UI（不寫回陣列）
         function updateCanvasSizeUI() {
             const w = parseInt(inputCanvasW.value) || 90;
             const h = parseInt(inputCanvasH.value) || 30;
@@ -532,24 +526,26 @@
             inputCanvasH.addEventListener('input', updateCanvasSize);
             inputCanvasName.addEventListener('input', updateCanvasSize);
 
+            // 🔥 關鍵修正點：選擇常用範本時，只改寬高，絕對不要去改使用者的頁面名稱！
             selectCanvasPreset.addEventListener('change', (e) => {
+                if(!e.target.value) return;
                 const [w, h] = e.target.value.split('x');
                 inputCanvasW.value = w;
                 inputCanvasH.value = h;
-                inputCanvasName.value = e.target.options[e.target.selectedIndex].text.split(' (')[0];
+                // 註銷原本會覆蓋名字的程式碼
                 updateCanvasSize();
             });
 
             document.getElementById('btn-save-canvas-preset').addEventListener('click', () => {
                 const w = parseInt(inputCanvasW.value);
                 const h = parseInt(inputCanvasH.value);
-                const name = inputCanvasName.value.trim();
-                if(!name) return alert("請輸入尺寸名稱");
-                customPresets.push({ name, w, h });
+                const name = prompt("請輸入此自訂尺寸的有名模板名稱（例如：入口大展板）：");
+                if(!name || !name.trim()) return;
+                customPresets.push({ name: name.trim(), w, h });
                 localStorage.setItem('custom_canvas_presets', JSON.stringify(customPresets));
                 loadPresetsToDropdown();
                 selectCanvasPreset.value = `${w}x${h}`;
-                alert(`已儲存尺寸：「${name}」`);
+                alert(`已將 ${w}x${h} cm 儲存為範本「${name}」`);
             });
 
             document.getElementById('btn-add-large').addEventListener('click', () => addCard({ type: "product", w: 15, h: 20, title: "Race Belt 號碼帶", promo: "420", orig: "500", note: "展場價" }));
@@ -809,7 +805,6 @@
 
         function exportAllPagesToPDF() {
             deselectAll();
-            // 導出前做最後防線同步
             const activePage = pageData.find(p => p.id === activePageId);
             if (activePage) {
                 activePage.w = parseInt(inputCanvasW.value) || 90;
