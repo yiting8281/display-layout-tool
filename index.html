@@ -258,10 +258,13 @@
     <div class="app-container">
         <aside class="left-panel">
             <div style="margin-bottom: 20px;">
-                <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">🖼️ 1. 當前頁面畫布尺寸</h3>
+                <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">🖼️ 當前頁面畫布尺寸</h3>
                 <div class="input-group">
-                    <label>選擇常用尺寸模板（僅變更寬高）</label>
-                    <select id="select-canvas-preset" class="input-control"></select>
+                    <label>選擇常用尺寸模板</label>
+                    <div style="display: flex; gap: 6px;">
+                        <select id="select-canvas-preset" class="input-control" style="flex: 1;"></select>
+                        <button id="btn-delete-canvas-preset" style="background-color: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 6px; padding: 0 10px; cursor: pointer; font-weight: bold; font-size: 13px;" title="刪除此自訂範本">🗑️</button>
+                    </div>
                 </div>
                 <div style="display: flex; gap: 8px;" class="input-group">
                     <div style="flex: 1;">
@@ -282,10 +285,10 @@
             </div>
 
             <div>
-                <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; font-weight: bold;">🏷️ 2. 新增卡牌（請點擊添加）</h3>
-                <button id="btn-add-large" class="btn btn-blue">📄 號碼帶卡牌 (大) <br><span style="font-size:11px; font-weight:normal; color:#4b5563;">預設：15 x 20 cm</span></button>
-                <button id="btn-add-medium" class="btn btn-amber">⏹️ 手腕/頭帶卡牌 (中) <br><span style="font-size:11px; font-weight:normal; color:#4b5563;">預設：12 x 12 cm</span></button>
-                <button id="btn-add-horizontal" class="btn btn-purple">➖ 寬型商品卡牌 (橫) <br><span style="font-size:11px; font-weight:normal; color:#4b5563;">預設：20 x 10 cm</span></button>
+                <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; font-weight: bold;">🏷️ 新增卡牌（請點擊添加）</h3>
+                <button id="btn-add-large" class="btn btn-blue">📄 長方形價格牌 <br><span style="font-size:11px; font-weight:normal; color:#4b5563;">預設：15 x 20 cm</span></button>
+                <button id="btn-add-medium" class="btn btn-amber">⏹️ 正方形價格牌 <br><span style="font-size:11px; font-weight:normal; color:#4b5563;">預設：12 x 12 cm</span></button>
+                <button id="btn-add-horizontal" class="btn btn-purple">➖ 長條形價格牌 <br><span style="font-size:11px; font-weight:normal; color:#4b5563;">預設：20 x 10 cm</span></button>
                 <button id="btn-add-heading" class="btn btn-slate">📛 標題卡牌 (大字置中) <br><span style="font-size:11px; font-weight:normal; color:#4b5563;">預設：40 x 10 cm | 無價格</span></button>
                 <button id="btn-add-annotation" class="btn btn-emerald">📝 備註活動卡牌 (說明欄) <br><span style="font-size:11px; font-weight:normal; color:#4b5563;">預設：30 x 12 cm | 無價格</span></button>
                 
@@ -329,7 +332,7 @@
         </div>
 
         <aside class="right-panel">
-            <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">⚙️ 3. 卡牌屬性編輯</h3>
+            <h3 style="font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 0; font-weight: bold;">⚙️ 卡牌屬性編輯</h3>
             <div id="property-placeholder" style="color: #9ca3af; padding-top: 40px; text-align: center; font-size: 14px;">
                 <p>📭 尚未選擇卡牌</p>
                 <p style="font-size: 12px; color: #cbd5e1;">請點擊畫布上的卡牌進行編輯</p>
@@ -338,7 +341,7 @@
                 <input type="hidden" id="edit-card-id">
                 <div class="input-group">
                     <label id="label-title">商品/標題名稱</label>
-                    <input type="text" id="edit-title" class="input-control">
+                    <textarea id="edit-title" class="input-control" rows="3" style="resize: vertical; font-family: inherit; line-height: 1.4; font-size: 14px;"></textarea>
                 </div>
                 <div style="display: flex; gap: 8px;" class="input-group" id="edit-price-group">
                     <div style="flex: 1;">
@@ -379,9 +382,8 @@
     <div id="print-area-container"></div>
 
     <script>
-        // 💾 讀取暫存資料，預設也賦予第一頁 zoom 記憶
         let pageData = JSON.parse(localStorage.getItem('exhibition_page_data')) || [
-            { id: "page-1", name: "櫃台後鐵網A", w: 90, h: 30, cards: [], zoom: 100 }
+            { id: "page-1", name: "鐵網 / 中島 A", w: 90, h: 30, cards: [], zoom: 100 }
         ];
 
         let activePageId = localStorage.getItem('exhibition_active_page_id') || pageData[0].id;
@@ -399,10 +401,13 @@
             });
         });
 
-        let currentZoom = 100; // 每個分頁自己的比例尺快取
+        let currentZoom = 100;
         const SCALE = 10;
         let selectedCardId = null;
         let customPresets = JSON.parse(localStorage.getItem('custom_canvas_presets')) || [];
+        
+        // 💡 宣告全域最高層級變數
+        let topZIndex = 100;
 
         const workCanvas = document.getElementById('work-canvas');
         const canvasHolder = document.getElementById('canvas-holder-element');
@@ -434,15 +439,16 @@
         function loadPresetsToDropdown() {
             selectCanvasPreset.innerHTML = `
                 <option value="" disabled selected hidden>--- 選擇常用尺寸範本 ---</option>
-                <option value="90x30">櫃位後鐵網 A (90 x 30 cm)</option>
-                <option value="120x60">大型陳列架 B (120 x 60 cm)</option>
-                <option value="60x40">中型展示櫃 C (60 x 40 cm)</option>
-                <option value="100x100">正方形展板 D (100 x 100 cm)</option>
+                <option value="90x30" data-system="true">鐵網 / 中島 (90 x 30 cm)</option>
+                <option value="120x60" data-system="true">中島內價格表 (69 x 20 cm)</option>
+                <option value="60x40" data-system="true">中島側板 (60 x 20 cm)</option>
+                <option value="100x100" data-system="true">正方形展板 (100 x 100 cm)</option>
             `;
-            customPresets.forEach(preset => {
+            customPresets.forEach((preset, index) => {
                 const opt = document.createElement('option');
                 opt.value = `${preset.w}x${preset.h}`;
-                opt.textContent = `${preset.name} (${preset.w} x ${preset.h} cm)`;
+                opt.dataset.index = index;
+                opt.textContent = `⭐ ${preset.name} (${preset.w} x ${preset.h} cm)`;
                 selectCanvasPreset.appendChild(opt);
             });
         }
@@ -472,7 +478,7 @@
                     activePage.w = parseInt(inputCanvasW.value) || 90;
                     activePage.h = parseInt(inputCanvasH.value) || 30;
                     activePage.name = inputCanvasName.value || "未命名陳列區";
-                    activePage.zoom = currentZoom; // 💡 切換前，紀錄舊分頁最終縮放比
+                    activePage.zoom = currentZoom;
                 }
             }
             
@@ -483,7 +489,6 @@
             inputCanvasH.value = targetPage.h;
             inputCanvasName.value = targetPage.name;
             
-            // 💡 讀取目標分頁獨立的 zoom 值，若舊資料沒有則給予預設 100
             currentZoom = targetPage.zoom || 100; 
             
             selectCanvasPreset.selectedIndex = 0;
@@ -491,7 +496,7 @@
             workCanvas.innerHTML = "";
             deselectAll();
             updateCanvasSizeUI(); 
-            applyZoom(); // 💡 強制更新當前分頁的獨立縮放比例畫面
+            applyZoom(); 
             renderTabs();
             targetPage.cards.forEach(cardData => recreateCardDOM(cardData));
             saveToLocalStorage(); 
@@ -499,7 +504,7 @@
 
         document.getElementById('btn-add-new-page').addEventListener('click', () => {
             const newId = `page-${Date.now()}`;
-            pageData.push({ id: newId, name: `新陳列區-${pageData.length + 1}`, w: 90, h: 30, cards: [], zoom: 100 }); // 💡 預設 100% zoom
+            pageData.push({ id: newId, name: `新陳列區-${pageData.length + 1}`, w: 90, h: 30, cards: [], zoom: 100 });
             switchPage(newId);
             saveToLocalStorage();
         });
@@ -514,7 +519,7 @@
                 }
 
                 pageData = pageData.filter(p => p.id !== pageId);
-                switchPage(nextActiveId, true); // 隔離切換，阻斷回存
+                switchPage(nextActiveId, true);
                 saveToLocalStorage();
             }
         }
@@ -552,7 +557,6 @@
             canvasDisplaySize.textContent = `${w} x ${h} cm`;
         }
 
-        // 💡 改造縮放監聽器，除了執行畫面，也即時同步回個別分頁物件中
         function setupZoomListeners() {
             document.getElementById('btn-zoom-in').addEventListener('click', () => { 
                 currentZoom = Math.min(150, currentZoom + 10); 
@@ -571,7 +575,6 @@
             });
         }
 
-        // 💡 即時將目前縮放百分比同步寫回資料庫的輔助函式
         function saveCurrentPageZoom() {
             const activePage = pageData.find(p => p.id === activePageId);
             if (activePage) {
@@ -583,6 +586,10 @@
         function applyZoom() {
             zoomDisplay.textContent = `${currentZoom}%`;
             canvasHolder.style.transform = `scale(${currentZoom / 100})`;
+        }
+
+        function formatTextToHTML(text) {
+            return (text || "").replace(/\n/g, '<br>');
         }
 
         function setupEventListeners() {
@@ -603,17 +610,43 @@
                 const h = parseInt(inputCanvasH.value);
                 const name = prompt("請輸入此自訂尺寸的範本名稱：");
                 if(!name || !name.trim()) return;
+                
                 customPresets.push({ name: name.trim(), w, h });
                 localStorage.setItem('custom_canvas_presets', JSON.stringify(customPresets));
+                
                 loadPresetsToDropdown();
                 selectCanvasPreset.value = `${w}x${h}`;
-                alert(`已將 ${w}x${h} cm 儲存為範本「${name}」`);
+                alert(`已將 ${w}x${h} cm 儲存為自訂範本「${name}」`);
             });
 
-            document.getElementById('btn-add-large').addEventListener('click', () => addCard({ type: "product", w: 15, h: 20, title: "Race Belt 號碼帶", promo: "420", orig: "500", note: "展場價" }));
-            document.getElementById('btn-add-medium').addEventListener('click', () => addCard({ type: "product", w: 12, h: 12, title: "UNIQ 手腕帶", promo: "380", orig: "450", note: "展場價" }));
-            document.getElementById('btn-add-horizontal').addEventListener('click', () => addCard({ type: "product", w: 20, h: 10, title: "Thin On/Off.3 透氣頭帶", promo: "550", orig: "650", note: "展場價" }));
-            document.getElementById('btn-add-heading').addEventListener('click', () => addCard({ type: "heading", w: 40, h: 10, title: "COMPRESSPORT 品牌特惠區", promo: "", orig: "", note: "" }));
+            document.getElementById('btn-delete-canvas-preset').addEventListener('click', () => {
+                const selectedOpt = selectCanvasPreset.options[selectCanvasPreset.selectedIndex];
+                
+                if (selectedOpt.value === "" || selectedOpt.disabled) {
+                    alert("請先從下拉選單選取您想刪除的自訂範本。");
+                    return;
+                }
+                if (selectedOpt.dataset.system === "true") {
+                    alert("此為系統內建預設尺寸，無法刪除。");
+                    return;
+                }
+                
+                const targetIndex = selectedOpt.dataset.index;
+                if (targetIndex !== undefined) {
+                    if (confirm(`確定要刪除自訂範本「${customPresets[targetIndex].name}」嗎？`)) {
+                        customPresets.splice(targetIndex, 1);
+                        localStorage.setItem('custom_canvas_presets', JSON.stringify(customPresets));
+                        loadPresetsToDropdown();
+                        selectCanvasPreset.selectedIndex = 0;
+                        alert("範本已成功刪除。");
+                    }
+                }
+            });
+
+            document.getElementById('btn-add-large').addEventListener('click', () => addCard({ type: "product", w: 15, h: 20, title: "長方形價格牌", promo: "420", orig: "500", note: "展場價" }));
+            document.getElementById('btn-add-medium').addEventListener('click', () => addCard({ type: "product", w: 12, h: 12, title: "正方形價格牌", promo: "380", orig: "450", note: "展場價" }));
+            document.getElementById('btn-add-horizontal').addEventListener('click', () => addCard({ type: "product", w: 20, h: 10, title: "長條形價格牌", promo: "550", orig: "650", note: "展場價" }));
+            document.getElementById('btn-add-heading').addEventListener('click', () => addCard({ type: "heading", w: 40, h: 10, title: "COMPRESSPORT\n品牌特惠區", promo: "", orig: "", note: "" }));
             document.getElementById('btn-add-annotation').addEventListener('click', () => addCard({ type: "annotation", w: 30, h: 12, title: "📢 活動說明文案填寫處", promo: "", orig: "", note: "" }));
 
             document.getElementById('btn-add-custom-card').addEventListener('click', () => {
@@ -654,6 +687,7 @@
                 if (confirm("確定要重置並清空所有排版分頁嗎？所有資料都將消失！")) {
                     localStorage.removeItem('exhibition_page_data');
                     localStorage.removeItem('exhibition_active_page_id');
+                    localStorage.removeItem('custom_canvas_presets');
                     location.reload();
                 }
             });
@@ -686,27 +720,31 @@
             div.style.height = `${cardObj.h * SCALE}px`;
             div.style.left = `${cardObj.x}px`;
             div.style.top = `${cardObj.y}px`;
+            
+            // 💡 生成時直接賦予全域最高堆疊數字
+            topZIndex++;
+            div.style.zIndex = topZIndex;
 
             let innerHTML = "";
             if (cardObj.type === "heading") {
                 innerHTML = `
                     <div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; text-align:center;">
-                        <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; font-size:16px; color:#1e293b; text-decoration:none;">${cardObj.title}</a>
+                        <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; font-size:16px; color:#1e293b; text-decoration:none; white-space:normal; line-height:1.3;">${formatTextToHTML(cardObj.title)}</a>
                         <div class="card-ui-dim" style="position:absolute; bottom:2px; left:4px; font-size:9px; color:#94a3b8; font-family:monospace; pointer-events:none;">${cardObj.w}x${cardObj.h}</div>
                     </div>
                 `;
             } else if (cardObj.type === "annotation") {
                 innerHTML = `
                     <div style="width:100%; height:100%; display:flex; justify-content:flex-start; align-items:flex-start; text-align:left;">
-                        <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-size:12px; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${cardObj.title}</a>
+                        <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-size:12px; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${formatTextToHTML(cardObj.title)}</a>
                         <div class="card-ui-dim" style="position:absolute; bottom:2px; left:4px; font-size:9px; color:#94a3b8; font-family:monospace; pointer-events:none;">${cardObj.w}x${cardObj.h}</div>
                     </div>
                 `;
             } else {
                 innerHTML = `
                     <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
-                        <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; border-bottom:1px solid #b3e5fc; text-align:center; font-size:12px; text-decoration:underline; color:#0c4a6e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cardObj.title}</a>
-                        <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
+                        <a class="card-ui-title" href="${cardObj.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; border-bottom:1px solid #b3e5fc; text-align:center; font-size:11px; text-decoration:underline; color:#0c4a6e; white-space:normal; line-height:1.2; overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; padding-bottom:2px;">${formatTextToHTML(cardObj.title)}</a>
+                        <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center; padding:2px 0;">
                             <div class="card-ui-orig" style="font-size:10px; color:#94a3b8; text-decoration:line-through;">$${cardObj.orig}</div>
                             <div class="card-ui-promo" style="font-size:14px; font-weight:800; color:#dc2626;">$${cardObj.promo}</div>
                         </div>
@@ -734,8 +772,10 @@
                     isDragging = true;
                     startX = e.clientX; startY = e.clientY;
                     startLeft = div.offsetLeft; startTop = div.offsetTop;
-                    document.querySelectorAll('.card-element').forEach(c => c.style.zIndex = 10);
-                    div.style.zIndex = 50;
+                    
+                    // 💡 拖曳時，也直接累加圖層，不改動其餘卡牌 style
+                    topZIndex++;
+                    div.style.zIndex = topZIndex;
                 }
 
                 const moveHandler = (mE) => {
@@ -772,10 +812,19 @@
         }
 
         function selectCard(id) {
-            document.querySelectorAll('.card-element').forEach(el => el.classList.remove('selected'));
+            // 💡 只乾淨移除 selected 框線，其餘完全不動，不干擾底層運作
+            document.querySelectorAll('.card-element').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
             selectedCardId = id;
             const element = document.getElementById(id);
-            if(element) element.classList.add('selected');
+            if(element) {
+                element.classList.add('selected');
+                // 💡 點擊選取時，直接遞增最上層級
+                topZIndex++;
+                element.style.zIndex = topZIndex;
+            }
             
             const activePage = pageData.find(p => p.id === activePageId);
             const cardObj = activePage.cards.find(c => c.id === id);
@@ -809,7 +858,9 @@
 
         function deselectAll() {
             selectedCardId = null;
-            document.querySelectorAll('.card-element').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.card-element').forEach(el => {
+                el.classList.remove('selected');
+            });
             propertyPlaceholder.style.display = 'block';
             propertyForm.style.display = 'none';
         }
@@ -826,7 +877,7 @@
 
             const titleA = el.querySelector('.card-ui-title');
             if (titleA) {
-                titleA.textContent = cardObj.title;
+                titleA.innerHTML = formatTextToHTML(cardObj.title);
                 titleA.href = cardObj.url || 'javascript:void(0);';
             }
             
@@ -916,14 +967,14 @@
                     
                     let bodyStr = "";
                     if (card.type === "heading") {
-                        bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; text-align:center;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; font-size:16px; color:#1e293b; text-decoration:none;">${card.title}</a></div>`;
+                        bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; text-align:center;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; font-size:16px; color:#1e293b; text-decoration:none; white-space:normal; line-height:1.3;">${formatTextToHTML(card.title)}</a></div>`;
                     } else if (card.type === "annotation") {
-                        bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:flex-start; align-items:flex-start; text-align:left;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-size:12px; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${card.title}</a></div>`;
+                        bodyStr = `<div style="width:100%; height:100%; display:flex; justify-content:flex-start; align-items:flex-start; text-align:left;"><a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-size:12px; color:#064e3b; text-decoration:none; white-space:normal; line-height:1.4;">${formatTextToHTML(card.title)}</a></div>`;
                     } else {
                         bodyStr = `
                             <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
-                                <a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; border-bottom:1px solid #b3e5fc; text-align:center; font-size:12px; text-decoration:underline; color:#0c4a6e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${card.title}</a>
-                                <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
+                                <a href="${card.url || 'javascript:void(0);'}" target="_blank" style="font-weight:bold; border-bottom:1px solid #b3e5fc; text-align:center; font-size:11px; text-decoration:underline; color:#0c4a6e; white-space:normal; line-height:1.2; overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; padding-bottom:2px;">${formatTextToHTML(card.title)}</a>
+                                <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center; padding:2px 0;">
                                     <div style="font-size:10px; color:#94a3b8; text-decoration:line-through;">$${card.orig}</div>
                                     <div style="font-size:14px; font-weight:800; color:#dc2626;">$${card.promo}</div>
                                 </div>
@@ -942,5 +993,3 @@
             }, 100);
         }
     </script>
-</body>
-</html>
